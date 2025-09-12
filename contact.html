@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Контактная информация - AI Курсы</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="contact-container">
+        <div class="contact-header">
+            <div class="container">
+                <h1>Почти готово!</h1>
+                <p class="contact-subtitle">Оставьте свои контакты, чтобы получить персональные результаты теста</p>
+            </div>
+        </div>
+
+        <div class="contact-content">
+            <div class="container">
+                <div class="contact-form-wrapper">
+                    <form id="contactForm" class="contact-form">
+                        <div class="form-group">
+                            <label for="name">Ваше имя *</label>
+                            <input type="text" id="name" name="name" required placeholder="Введите ваше имя">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Email *</label>
+                            <input type="email" id="email" name="email" required placeholder="your@email.com">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="phone">Телефон или мессенджер</label>
+                            <input type="tel" id="phone" name="phone" placeholder="+972 50 123-4567 или @username">
+                            <small>Укажите удобный способ связи (опционально)</small>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="consent" name="consent" required>
+                                <span class="checkmark"></span>
+                                Согласен на обработку персональных данных и получение полезных материалов по AI *
+                            </label>
+                        </div>
+
+                        <button type="submit" class="submit-button">
+                            Получить результаты теста
+                        </button>
+                    </form>
+
+                    <div class="contact-benefits">
+                        <h3>Что вы получите:</h3>
+                        <ul>
+                            <li>📊 Персональную оценку вашего AI-потенциала</li>
+                            <li>🎯 Рекомендации по развитию навыков</li>
+                            <li>📚 Бесплатные материалы для изучения AI</li>
+                            <li>💡 Эксклюзивные советы от практикующего эксперта</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="contact.js"></script>
+</body>
+</html>

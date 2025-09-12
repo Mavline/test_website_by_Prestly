@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Результаты теста - Ваш AI потенциал</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="results-container">
+        <div class="results-header">
+            <div class="container">
+                <h1>Ваши результаты готовы!</h1>
+                <p class="results-subtitle">Персональная оценка вашего AI-потенциала</p>
+            </div>
+        </div>
+
+        <div class="results-content">
+            <div class="container">
+                <div class="results-grid">
+                    <!-- Speedometer Section -->
+                    <div class="speedometer-section">
+                        <h2>Уровень готовности к AI</h2>
+                        <div class="speedometer-container">
+                            <div class="speedometer">
+                                <div class="speedometer-arc"></div>
+                                <div class="speedometer-needle" id="needle"></div>
+                                <div class="speedometer-center"></div>
+                                <div class="speedometer-labels">
+                                    <span class="label-start">0</span>
+                                    <span class="label-middle">50</span>
+                                    <span class="label-end">100</span>
+                                </div>
+                            </div>
+                            <div class="score-display">
+                                <span class="score-number" id="scoreNumber">0</span>
+                                <span class="score-text">из 100</span>
+                            </div>
+                        </div>
+                        <div class="profile-display">
+                            <h3 id="profile-type">Системный Оптимизатор</h3>
+                        </div>
+                        <div class="score-interpretation" id="scoreInterpretation">
+                            <!-- Will be filled by JavaScript -->
+                        </div>
+                        <div class="personalized-message" id="personalized-message">
+                            <!-- Will be filled by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Personal Strategy Section -->
+                    <div class="personal-strategy-section">
+                        <div id="personalStrategy">
+                            <!-- Will be filled by JavaScript with full consultation -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gift Section -->
+                <div class="gift-section">
+                    <div class="gift-content">
+                        <h2>🎁 Получите ваш персональный подарок</h2>
+                        <p class="gift-description" id="giftDescription">
+                            <!-- Will be filled by JavaScript -->
+                        </p>
+                        <button class="gift-button" id="giftButton" onclick="downloadGift()">
+                            Получить подарок
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Thank You Section -->
+                <div class="thank-you-section">
+                    <h2>Спасибо за прохождение теста!</h2>
+                    <p>Ваши результаты отправлены на указанный email. Следите за полезными материалами и эксклюзивными предложениями.</p>
+                    <div class="action-buttons">
+                        <button class="back-to-home-btn" onclick="goToHome()">Пройти тест заново</button>
+                    </div>
+                    <div class="social-links">
+                        <a href="#" class="social-link">Telegram канал</a>
+                        <a href="#" class="social-link">LinkedIn</a>
+                        <a href="#" class="social-link">YouTube</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="results.js"></script>
+</body>
+</html>

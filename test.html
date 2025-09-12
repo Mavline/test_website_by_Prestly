@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест готовности к AI — Определите свой потенциал</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <div class="container">
+                <h1>Тест готовности к AI</h1>
+                <p class="test-subtitle">Этот 5-минутный тест покажет, какие AI-инструменты удвоят вашу производительность и где скрыты точки роста вашей карьеры. Результат — сразу после ответов.</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text">
+                    <span id="currentQuestion">1</span> из <span id="totalQuestions">13</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-content">
+            <div class="container">
+                <form id="testForm">
+                    <div class="question-block" id="singleQuestionBlock">
+                        <h2 class="block-title" id="blockTitle">Текущая реальность</h2>
+                        <div class="question" id="questionContainer">
+                            <!-- Вопрос будет подставляться динамически из test.js -->
+                        </div>
+                    </div>
+
+                    <div class="test-navigation">
+                        <button type="button" id="prevBtn" onclick="prevQuestion()" style="display: none;">Назад</button>
+                        <button type="button" id="nextBtn" onclick="nextQuestion()">Далее</button>
+                        <button type="button" id="submitBtn" onclick="submitTest()" style="display: none;">Завершить тест</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="test.js"></script>
+</body>
+</html>
