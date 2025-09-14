@@ -79,7 +79,8 @@ function submitContactForm() {
     };
     
     // Get test data from localStorage
-    const testData = JSON.parse(localStorage.getItem('testData') || '{}');
+    const rawTestData = JSON.parse(localStorage.getItem('testData') || '{}');
+    const testData = normalizeTestData(rawTestData);
     
     // Combine contact and test data
     const fullData = {
@@ -108,6 +109,8 @@ function submitContactForm() {
 }
 
 function calculateTestResults(testData) {
+    // Safety: normalize inside as well (на случай старого формата в LS)
+    testData = normalizeTestData(testData || {});
     // Векторная система оценки по 3 архетипам
     let optimizerScore = 0;    // О - Системный Оптимизатор
     let strategistScore = 0;   // С - Дальновидный Практик  
@@ -201,6 +204,13 @@ function calculateTestResults(testData) {
         profileType = 'pioneer';
         profileName = 'Энтузиаст-Экспериментатор';
         readinessScore = Math.min(95, 70 + pioneerScore * 2);
+    }
+
+    // Если по какой-то причине ни один ответ не распознан — выдать базовый уровень и явно пометить как «optimizer»
+    if (optimizerScore === 0 && strategistScore === 0 && pioneerScore === 0) {
+        profileType = 'optimizer';
+        profileName = 'Системный Оптимизатор';
+        readinessScore = 45; // безопасное дефолтное значение, чтобы не застревать на 65
     }
 
     const clientType = readinessScore >= 75 ? 'hot' : readinessScore >= 55 ? 'warm' : 'cold';
@@ -562,12 +572,14 @@ style.textContent = `
         }
         
         .contact-form {
-            padding: 30px 20px;
+            padding: 24px 16px;
         }
         
         .contact-benefits {
-            padding: 25px 20px;
+            padding: 20px 16px;
         }
+        .contact-content { padding: 0 16px; }
+        .contact-form-wrapper { gap: 20px; }
     }
 `;
 document.head.appendChild(style);

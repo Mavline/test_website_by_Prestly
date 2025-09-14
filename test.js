@@ -157,6 +157,8 @@ function submitTest() {
     showValidationMessage('Ответьте на обязательные вопросы');
     return;
   }
+  // Очистим прежние результаты, чтобы исключить использование старого балла
+  try { localStorage.removeItem('testResults'); } catch(e){}
   localStorage.setItem('testData', JSON.stringify(testData));
   window.location.href = 'contact.html';
 }
@@ -224,6 +226,16 @@ style.textContent = `
   .test-navigation button { background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%); border:none; color:#fff; padding:15px 30px; font-size:1.05rem; font-weight:600; border-radius:10px; cursor:pointer; transition: all .3s ease; min-width:140px; }
   .test-navigation button:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(78,205,196,.4); }
   @media (max-width:768px){ .test-header h1{font-size:2rem} .question-block{padding:30px 20px} .question h3{font-size:1.1rem} .test-navigation{flex-direction:column; align-items:center} .test-navigation button{width:220px} }
+
+  /* Ultra-compact header for small phones */
+  @media (max-width:480px){
+    .test-header{ padding:12px 0; }
+    .test-header h1{ font-size:1.3rem; margin-bottom:6px; }
+    .test-subtitle{ display:none; }
+    .progress-bar{ max-width:240px; height:6px; margin:0 auto 6px; }
+    .progress-text{ font-size:.85rem; }
+    .question-block{ padding:20px 16px; }
+  }
 `;
 document.head.appendChild(style);
 
