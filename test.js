@@ -48,15 +48,16 @@ function renderQuestion() {
   if (q.type === 'radio') {
     const optionsDiv = document.createElement('div');
     optionsDiv.className = 'options';
+    const codes = ['A','B','C','D'];
     q.options.forEach((opt, idx) => {
       const id = `${q.id}_${idx}`;
       const label = document.createElement('label');
       const input = document.createElement('input');
       input.type = 'radio';
       input.name = q.id;
-      input.value = opt;
+      input.value = codes[idx] || String(idx);
       input.id = id;
-      if (testData[q.id] === opt) input.checked = true;
+      if (testData[q.id] === input.value) input.checked = true;
       label.appendChild(input);
       label.appendChild(document.createTextNode(opt));
       optionsDiv.appendChild(label);
@@ -91,6 +92,7 @@ function nextQuestion() {
     renderQuestion();
     updateProgress();
     updateNavVisibility();
+    scrollToTestTop();
   }
 }
 
@@ -100,6 +102,7 @@ function prevQuestion() {
     renderQuestion();
     updateProgress();
     updateNavVisibility();
+    scrollToTestTop();
   }
 }
 
@@ -199,8 +202,8 @@ style.textContent = `
   .validation-message { background: rgba(255,99,99,0.1); border:1px solid rgba(255,99,99,0.3); color:#ff6363; padding:12px 20px; border-radius:8px; margin:20px 0; text-align:center; font-weight:500; animation: fadeIn .3s ease; }
   @keyframes fadeIn { from {opacity:0; transform: translateY(-10px)} to {opacity:1; transform: translateY(0)} }
   .test-container { min-height:100vh; background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%); padding:20px 0; }
-  .test-header { background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 50%, #45b7d1 100%); padding:40px 0; text-align:center; margin-bottom:40px; position:relative; }
-  .test-header::before { content:''; position:absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.4); }
+  .test-header { background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 50%, #45b7d1 100%); padding:40px 0; text-align:center; margin-bottom:40px; position:sticky; top:0; z-index:20; }
+  .test-header::before { content:''; position:absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.4); z-index:1; }
   .test-header > * { position:relative; z-index:2; }
   .test-header h1 { font-size:2.5rem; margin-bottom:1rem; color:#fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); font-weight:700; }
   .test-subtitle { font-size:1.1rem; color:#fff; margin-bottom:2rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); }
@@ -220,6 +223,12 @@ style.textContent = `
   .test-navigation { display:flex; justify-content:center; gap:20px; margin-top:30px; }
   .test-navigation button { background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%); border:none; color:#fff; padding:15px 30px; font-size:1.05rem; font-weight:600; border-radius:10px; cursor:pointer; transition: all .3s ease; min-width:140px; }
   .test-navigation button:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(78,205,196,.4); }
-  @media (max-width:768px){ .test-header h1{font-size:2rem} .question-block{padding:30px 20px} .question h3{font-size:1.1rem} .test-navigation{flex-direction:column} .test-navigation button{width:220px} }
+  @media (max-width:768px){ .test-header h1{font-size:2rem} .question-block{padding:30px 20px} .question h3{font-size:1.1rem} .test-navigation{flex-direction:column; align-items:center} .test-navigation button{width:220px} }
 `;
 document.head.appendChild(style);
+
+function scrollToTestTop(){
+  const header = document.querySelector('.test-header');
+  const top = header ? header.offsetTop : 0;
+  window.scrollTo({ top, behavior: 'smooth' });
+}

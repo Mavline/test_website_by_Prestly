@@ -40,7 +40,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Animate speedometer
-    animateSpeedometer(results.readinessScore);
+    if (typeof results.readinessScore === 'number') {
+        animateSpeedometer(results.readinessScore);
+    }
 });
 
 function displayResults(results, userData) {

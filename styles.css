@@ -450,7 +450,8 @@ h1, h2, h3 {
 
 /* Final feedback block on results */
 .final-feedback {
-    margin-top: 2.5rem;
+    margin-top: 3rem;
+    padding-bottom: 2.5rem;
     text-align: center;
 }
 
@@ -458,6 +459,11 @@ h1, h2, h3 {
     color: #b0f0e6;
     margin-bottom: 0.75rem;
     font-size: 1rem;
+}
+
+.final-feedback .cta-button {
+    display: inline-block;
+    margin-top: 8px;
 }
 
 .cta-features {
@@ -473,6 +479,11 @@ h1, h2, h3 {
     color: #ffffff;
     font-weight: 600;
     text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Utility: cancel uppercase for specific buttons */
+.no-transform {
+    text-transform: none !important;
 }
 
 /* Responsive Design */
@@ -515,4 +526,6 @@ h1, h2, h3 {
         align-items: center;
         gap: 1rem;
     }
+
+    .about-cta { text-align: center; }
 }
