@@ -6,6 +6,14 @@
     <title>Контактная информация - AI Курсы</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Critical CSS to prevent FOUC */
+        body,html{margin:0;padding:0}
+        .contact-container{min-height:100vh;background:linear-gradient(135deg,#0f0f23 0%,#1a1a2e 50%,#16213e 100%);padding:20px 0;font-family:'Inter',sans-serif;color:#fff}
+        .contact-header{background:linear-gradient(135deg,#ff6b6b 0%,#4ecdc4 50%,#45b7d1 100%);padding:40px 0;text-align:center;margin-bottom:40px;position:relative}
+        .contact-header::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:1}
+        .contact-header>*{position:relative;z-index:2}
+    </style>
 </head>
 <body>
     <div class="contact-container">
@@ -63,6 +71,7 @@
         </div>
     </div>
 
+    <script src="matrix.js"></script>
     <script src="contact.js"></script>
 </body>
 </html>

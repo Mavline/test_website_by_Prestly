@@ -3,7 +3,8 @@
     "allow": [
       "Bash(pkill:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "mcp__smithery-ai-github__get_file_contents"
     ],
     "deny": [],
     "ask": []
