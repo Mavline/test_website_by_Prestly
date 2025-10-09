@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Очистка данных</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 500px;
+        }
+        h1 { color: #4ecdc4; margin-bottom: 20px; }
+        button {
+            background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .status { margin-top: 20px; color: #4ecdc4; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Очистка данных теста</h1>
+        <p>Нажмите кнопку, чтобы очистить старые данные теста и начать заново.</p>
+        <button onclick="clearData()">Очистить данные</button>
+        <button onclick="location.href='index.html'">На главную</button>
+        <div class="status" id="status"></div>
+    </div>
+    <script>
+        function clearData() {
+            try {
+                localStorage.removeItem('testData');
+                localStorage.removeItem('testResults');
+                localStorage.removeItem('fullUserData');
+                document.getElementById('status').textContent = '✓ Данные успешно очищены! Можете вернуться на главную.';
+                console.log('LocalStorage cleared successfully');
+            } catch (e) {
+                document.getElementById('status').textContent = '✗ Ошибка при очистке: ' + e.message;
+            }
+        }
+    </script>
+</body>
+</html>

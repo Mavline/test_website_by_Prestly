@@ -48,24 +48,17 @@ function renderQuestion() {
   if (q.type === 'radio') {
     const optionsDiv = document.createElement('div');
     optionsDiv.className = 'options';
-    const codes = ['A','B','C','D'];
     q.options.forEach((opt, idx) => {
       const id = `${q.id}_${idx}`;
       const label = document.createElement('label');
       const input = document.createElement('input');
       input.type = 'radio';
       input.name = q.id;
-<<<<<<< HEAD
-      input.value = codes[idx] || String(idx);
-      input.id = id;
-      if (testData[q.id] === input.value) input.checked = true;
-=======
       // Store letter value (A, B, C, D) for scoring logic
       const letterValue = String.fromCharCode(65 + idx);
       input.value = letterValue;
       input.id = id;
       if (testData[q.id] === letterValue) input.checked = true;
->>>>>>> 3e97816 (Fix contact form scoring logic)
       label.appendChild(input);
       label.appendChild(document.createTextNode(opt));
       optionsDiv.appendChild(label);

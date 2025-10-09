@@ -1,10 +1,20 @@
 // Contact form functionality
+
+// Normalize test data to ensure letter format (A, B, C, D)
+function normalizeTestData(data) {
+    // If data is already in correct format or empty, return as is
+    if (!data || typeof data !== 'object') return {};
+
+    // Return data as is - test.js now saves in correct format
+    return data;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('contactForm');
-    
+
     form.addEventListener('submit', function(e) {
         e.preventDefault();
-        
+
         if (validateForm()) {
             submitContactForm();
         }
@@ -101,9 +111,11 @@ function submitContactForm() {
     // Simulate API call (replace with actual API call)
     setTimeout(() => {
         // Calculate results and redirect
+        console.log('Test Data:', testData);
         const results = calculateTestResults(testData);
+        console.log('Calculated Results:', results);
         localStorage.setItem('testResults', JSON.stringify(results));
-        
+
         window.location.href = 'results.html';
     }, 1500);
 }
