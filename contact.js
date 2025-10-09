@@ -254,9 +254,9 @@ function buildRecommendations(testData, profileType) {
     }
 
     // Добавляем рекомендации на основе направления (q12)
-    if (testData.q12 === 'Автоматизация рабочих процессов (Workflow Automation).') {
+    if (testData.q12 === 'A') {
         rec.push('Освойте no-code платформы для автоматизации');
-    } else if (testData.q12 === 'Создание умных чат-ботов и агентов.') {
+    } else if (testData.q12 === 'B') {
         rec.push('Начните с простого чат-бота для вашей задачи');
     }
 
