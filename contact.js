@@ -91,17 +91,26 @@ function submitContactForm() {
     // Get test data from localStorage
     const rawTestData = JSON.parse(localStorage.getItem('testData') || '{}');
     const testData = normalizeTestData(rawTestData);
-    
+
+    // Validate testData before proceeding
+    if (!testData || Object.keys(testData).length === 0) {
+        alert('Ошибка: данные теста не найдены. Пожалуйста, пройдите тест заново.');
+        window.location.href = 'test.html';
+        return;
+    }
+
+    console.log('Test data being sent:', testData);
+
     // Combine contact and test data
     const fullData = {
         ...testData,
         ...formData,
         timestamp: new Date().toISOString()
     };
-    
+
     // Store complete data
     localStorage.setItem('fullUserData', JSON.stringify(fullData));
-    
+
     // Show loading state
     const submitButton = document.querySelector('.submit-button');
     const originalText = submitButton.textContent;
@@ -110,6 +119,7 @@ function submitContactForm() {
 
     // Calculate initial profile locally
     const localResults = calculateTestResults(testData);
+    console.log('Local results:', localResults);
 
     // Real API call to generate AI-powered results
     fetch('/api/generate-results', {
@@ -123,9 +133,11 @@ function submitContactForm() {
             readinessScore: localResults.readinessScore
         })
     })
-    .then(response => {
+    .then(async response => {
         if (!response.ok) {
-            throw new Error('Ошибка генерации результатов');
+            const errorData = await response.json().catch(() => ({}));
+            console.error('API Error Response:', errorData);
+            throw new Error(errorData.error || 'Ошибка генерации результатов');
         }
         return response.json();
     })
@@ -145,9 +157,12 @@ function submitContactForm() {
     })
     .catch(error => {
         console.error('Error:', error);
-        submitButton.textContent = 'Ошибка. Попробуйте снова';
+        submitButton.textContent = originalText;
         submitButton.disabled = false;
-        alert('Произошла ошибка при генерации результатов. Пожалуйста, попробуйте еще раз.');
+
+        // Show detailed error message
+        const errorMsg = `Произошла ошибка при генерации результатов: ${error.message}\n\nПожалуйста, попробуйте еще раз.`;
+        alert(errorMsg);
     });
 }
 
