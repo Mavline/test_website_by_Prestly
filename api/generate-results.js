@@ -82,7 +82,7 @@ ${JSON.stringify(testData, null, 2)}
                     'X-Title': 'AI Readiness Test'
                 },
                 body: JSON.stringify({
-                    model: 'zhipu/glm-4-6',
+                    model: 'z-ai/glm-4.6',
                     messages: [
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userPrompt }
