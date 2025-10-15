@@ -1,5 +1,5 @@
 // Vercel Serverless Function for OpenRouter API
-// Model: Z.AI: GLM 4.6
+// Model: x-ai/grok-4-fast
 
 export default async function handler(req, res) {
     // CORS headers
@@ -36,13 +36,13 @@ export default async function handler(req, res) {
             return res.status(500).json({ error: 'API configuration missing' });
         }
 
-        // Prepare prompt for GLM 4.6
+        // Prepare prompt for Grok 4 Fast
         const systemPrompt = `Вы - эксперт по AI и автоматизации. Анализируете результаты теста готовности к AI и создаёте персонализированные рекомендации на русском языке.
 
 Архетипы пользователей:
-- Optimizer (Системный Оптимизатор): фокус на эффективность и автоматизацию
-- Strategist (Дальновидный Практик): долгосрочное планирование и развитие
-- Pioneer (Энтузиаст-Экспериментатор): инновации и эксперименты
+- optimizer (Системный Оптимизатор): фокус на эффективность и автоматизацию
+- strategist (Дальновидный Практик): долгосрочное планирование и развитие
+- pioneer (Энтузиаст-Экспериментатор): инновации и эксперименты
 
 Ваша задача: создать краткое, мотивирующее сообщение (2-3 абзаца) для пользователя с профилем ${profileType} и уровнем готовности ${readinessScore}/100.`;
 
@@ -69,7 +69,7 @@ ${JSON.stringify(testData, null, 2)}
                 'X-Title': 'AI Readiness Test'
             },
             body: JSON.stringify({
-                model: 'zhipu/glm-4-6',
+                model: 'x-ai/grok-4-fast',
                 messages: [
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: userPrompt }
@@ -98,6 +98,9 @@ ${JSON.stringify(testData, null, 2)}
         return res.status(200).json({
             success: true,
             message: aiMessage,
+            profile: profileType,
+            readinessScore: readinessScore,
+            aiGeneratedStrategy: aiMessage,
             usage: data.usage
         });
 
