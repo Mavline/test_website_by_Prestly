@@ -389,33 +389,60 @@ function animateSpeedometer(targetScore) {
 function downloadGift() {
     const results = JSON.parse(localStorage.getItem('testResults') || '{}');
     const userData = JSON.parse(localStorage.getItem('fullUserData') || '{}');
-    
-    // Simulate gift download/email sending
+
     const button = document.getElementById('giftButton');
     const originalText = button.textContent;
-    
+
     button.textContent = 'Отправляем...';
     button.disabled = true;
-    
-    // Here you would typically send data to your backend
-    // For demo purposes, we'll just simulate the process
-    setTimeout(() => {
+
+    // Send gift via email API
+    fetch('/api/send-gift', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            email: userData.email,
+            name: userData.name,
+            profileType: results.profileType,
+            readinessScore: results.readinessScore
+        })
+    })
+    .then(async response => {
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Ошибка отправки подарка');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Gift sent successfully:', data);
         button.textContent = 'Подарок отправлен на email!';
         button.style.background = '#4CAF50';
-        
+
         // Show success message
         showSuccessMessage();
-        
-        // Log data for demonstration (remove in production)
-        console.log('User Data:', userData);
-        console.log('Test Results:', results);
-        
+
         setTimeout(() => {
             button.textContent = originalText;
             button.disabled = false;
             button.style.background = '';
         }, 3000);
-    }, 1500);
+    })
+    .catch(error => {
+        console.error('Error sending gift:', error);
+        button.textContent = 'Ошибка! Попробуйте снова';
+        button.style.background = '#F44336';
+
+        alert(`Ошибка при отправке подарка: ${error.message}\n\nПожалуйста, попробуйте еще раз или свяжитесь с нами напрямую.`);
+
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.disabled = false;
+            button.style.background = '';
+        }, 3000);
+    });
 }
 
 function showSuccessMessage() {

@@ -153,6 +153,31 @@ function submitContactForm() {
             personalizedMessage: data.message || localResults.personalizedMessage
         }));
 
+        // Save to Google Sheets
+        const sheetsData = {
+            ...formData,
+            ...testData,
+            profileType: localResults.profileType,
+            readinessScore: localResults.readinessScore,
+            timestamp: new Date().toISOString()
+        };
+
+        fetch('/api/save-to-sheets', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(sheetsData)
+        })
+        .then(response => response.json())
+        .then(result => {
+            console.log('Saved to Google Sheets:', result);
+        })
+        .catch(error => {
+            console.error('Error saving to Google Sheets:', error);
+            // Don't block navigation if sheets save fails
+        });
+
         window.location.href = 'results.html';
     })
     .catch(error => {
