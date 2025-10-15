@@ -78,9 +78,9 @@ function renderQuestion() {
 
   // helper hint
   const hint = document.createElement('div');
-  hint.style.marginTop = '10px';
+  hint.style.marginTop = '6px';
   hint.style.color = '#9aa0a6';
-  hint.style.fontSize = '.95rem';
+  hint.style.fontSize = '.85rem';
   hint.textContent = 'Выберите наиболее подходящий вариант. В конце получите персональный профиль готовности.';
   container.appendChild(hint);
 }
@@ -205,26 +205,26 @@ style.textContent = `
   .validation-message { background: rgba(255,99,99,0.1); border:1px solid rgba(255,99,99,0.3); color:#ff6363; padding:12px 20px; border-radius:8px; margin:20px 0; text-align:center; font-weight:500; animation: fadeIn .3s ease; }
   @keyframes fadeIn { from {opacity:0; transform: translateY(-10px)} to {opacity:1; transform: translateY(0)} }
   .test-container { min-height:100vh; background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%); padding:20px 0; }
-  .test-header { background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 50%, #45b7d1 100%); padding:40px 0; text-align:center; margin-bottom:40px; position:sticky; top:0; z-index:20; }
+  .test-header { background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 50%, #45b7d1 100%); padding:28px 0; text-align:center; margin-bottom:24px; position:sticky; top:0; z-index:20; }
   .test-header::before { content:''; position:absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.4); z-index:1; }
   .test-header > * { position:relative; z-index:2; }
-  .test-header h1 { font-size:2.5rem; margin-bottom:1rem; color:#fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); font-weight:700; }
-  .test-subtitle { font-size:1.1rem; color:#fff; margin-bottom:2rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); }
-  .progress-bar { width:100%; max-width:500px; height:8px; background: rgba(255,255,255,0.1); border-radius:4px; margin:0 auto 1rem; overflow:hidden; }
+  .test-header h1 { font-size:2rem; margin-bottom:0.7rem; color:#fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); font-weight:700; }
+  .test-subtitle { font-size:1rem; color:#fff; margin-bottom:1.5rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); }
+  .progress-bar { width:100%; max-width:500px; height:6px; background: rgba(255,255,255,0.1); border-radius:4px; margin:0 auto 0.8rem; overflow:hidden; }
   .progress-fill { height:100%; background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%); border-radius:4px; transition: width .3s ease; width:6.67%; }
-  .progress-text { color:#b0b0b0; font-size:.9rem; }
+  .progress-text { color:#b0b0b0; font-size:.85rem; }
   .test-content { max-width:800px; margin:0 auto; padding:0 20px; }
-  .question-block { background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:40px; margin-bottom:30px; backdrop-filter: blur(10px); }
-  .block-title { font-size:1.6rem; margin-bottom:1.5rem; text-align:center; color:#4ecdc4; }
-  .question h3 { font-size:1.25rem; margin-bottom:1.2rem; color:#fff; line-height:1.4; }
-  .options { display:flex; flex-direction:column; gap:12px; }
-  .options label { display:flex; align-items:center; padding:15px 20px; background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:10px; cursor:pointer; transition: all .3s ease; font-size:1rem; color:#e0e0e0; }
+  .question-block { background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:24px; margin-bottom:20px; backdrop-filter: blur(10px); }
+  .block-title { font-size:1.2rem; margin-bottom:1rem; text-align:center; color:#4ecdc4; }
+  .question h3 { font-size:1.05rem; margin-bottom:0.8rem; color:#fff; line-height:1.4; }
+  .options { display:flex; flex-direction:column; gap:8px; }
+  .options label { display:flex; align-items:center; padding:10px 15px; background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:10px; cursor:pointer; transition: all .3s ease; font-size:0.95rem; color:#e0e0e0; }
   .options label:hover { background: rgba(78,205,196,0.1); border-color: rgba(78,205,196,0.3); transform: translateX(5px); }
   .options input[type=radio] { margin-right:15px; width:18px; height:18px; accent-color:#4ecdc4; }
-  .text-input textarea { width:100%; min-height:120px; padding:20px; background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#fff; font-size:1rem; resize:vertical; }
+  .text-input textarea { width:100%; min-height:100px; padding:15px; background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#fff; font-size:0.95rem; resize:vertical; }
   .text-input textarea::placeholder { color:#888; }
-  .test-navigation { display:flex; justify-content:center; gap:20px; margin-top:30px; }
-  .test-navigation button { background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%); border:none; color:#fff; padding:15px 30px; font-size:1.05rem; font-weight:600; border-radius:10px; cursor:pointer; transition: all .3s ease; min-width:140px; }
+  .test-navigation { display:flex; justify-content:center; gap:15px; margin-top:20px; }
+  .test-navigation button { background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%); border:none; color:#fff; padding:12px 24px; font-size:1rem; font-weight:600; border-radius:10px; cursor:pointer; transition: all .3s ease; min-width:120px; }
   .test-navigation button:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(78,205,196,.4); }
   @media (max-width:768px){ .test-header h1{font-size:2rem} .question-block{padding:30px 20px} .question h3{font-size:1.1rem} .test-navigation{flex-direction:column; align-items:center} .test-navigation button{width:220px} }
 

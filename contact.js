@@ -105,19 +105,43 @@ function submitContactForm() {
     // Show loading state
     const submitButton = document.querySelector('.submit-button');
     const originalText = submitButton.textContent;
-    submitButton.textContent = 'Обработка...';
+    submitButton.textContent = 'Генерируем результаты...';
     submitButton.disabled = true;
-    
-    // Simulate API call (replace with actual API call)
-    setTimeout(() => {
-        // Calculate results and redirect
-        console.log('Test Data:', testData);
-        const results = calculateTestResults(testData);
-        console.log('Calculated Results:', results);
-        localStorage.setItem('testResults', JSON.stringify(results));
+
+    // Real API call to generate AI-powered results
+    fetch('/api/generate-results', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ testData })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Ошибка генерации результатов');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('AI Generated Results:', data);
+
+        // Save AI-generated results
+        localStorage.setItem('testResults', JSON.stringify({
+            profile: data.profile,
+            readinessScore: data.readinessScore,
+            aiGeneratedStrategy: data.aiGeneratedStrategy,
+            profileType: data.profile?.toLowerCase().includes('оптимизатор') ? 'optimizer' :
+                        data.profile?.toLowerCase().includes('практик') ? 'strategist' : 'pioneer'
+        }));
 
         window.location.href = 'results.html';
-    }, 1500);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        submitButton.textContent = 'Ошибка. Попробуйте снова';
+        submitButton.disabled = false;
+        alert('Произошла ошибка при генерации результатов. Пожалуйста, попробуйте еще раз.');
+    });
 }
 
 function calculateTestResults(testData) {
