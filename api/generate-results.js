@@ -24,8 +24,17 @@ export default async function handler(req, res) {
         const { testData, profileType, readinessScore } = req.body;
 
         // Validate input
-        if (!testData || !profileType) {
-            return res.status(400).json({ error: 'Missing required fields' });
+        if (!testData || typeof testData !== 'object' || Object.keys(testData).length === 0) {
+            console.error('Invalid testData:', testData);
+            return res.status(400).json({
+                error: 'Missing or invalid testData',
+                received: { hasTestData: !!testData, testDataType: typeof testData, keys: testData ? Object.keys(testData).length : 0 }
+            });
+        }
+
+        if (!profileType) {
+            console.error('Missing profileType');
+            return res.status(400).json({ error: 'Missing profileType' });
         }
 
         // OpenRouter API configuration
@@ -73,7 +82,7 @@ ${JSON.stringify(testData, null, 2)}
                     'X-Title': 'AI Readiness Test'
                 },
                 body: JSON.stringify({
-                    model: 'anthropic/claude-3.5-haiku',
+                    model: 'zhipu/glm-4-6',
                     messages: [
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userPrompt }

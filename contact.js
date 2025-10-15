@@ -91,33 +91,79 @@ function submitContactForm() {
     // Get test data from localStorage
     const rawTestData = JSON.parse(localStorage.getItem('testData') || '{}');
     const testData = normalizeTestData(rawTestData);
-    
+
+    // Validate testData before proceeding
+    if (!testData || Object.keys(testData).length === 0) {
+        alert('Ошибка: данные теста не найдены. Пожалуйста, пройдите тест заново.');
+        window.location.href = 'test.html';
+        return;
+    }
+
+    console.log('Test data being sent:', testData);
+
     // Combine contact and test data
     const fullData = {
         ...testData,
         ...formData,
         timestamp: new Date().toISOString()
     };
-    
+
     // Store complete data
     localStorage.setItem('fullUserData', JSON.stringify(fullData));
-    
+
     // Show loading state
     const submitButton = document.querySelector('.submit-button');
     const originalText = submitButton.textContent;
-    submitButton.textContent = 'Обработка...';
+    submitButton.textContent = 'Генерируем результаты...';
     submitButton.disabled = true;
-    
-    // Simulate API call (replace with actual API call)
-    setTimeout(() => {
-        // Calculate results and redirect
-        console.log('Test Data:', testData);
-        const results = calculateTestResults(testData);
-        console.log('Calculated Results:', results);
-        localStorage.setItem('testResults', JSON.stringify(results));
+
+    // Calculate initial profile locally
+    const localResults = calculateTestResults(testData);
+    console.log('Local results:', localResults);
+
+    // Real API call to generate AI-powered results
+    fetch('/api/generate-results', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            testData: testData,
+            profileType: localResults.profileType,
+            readinessScore: localResults.readinessScore
+        })
+    })
+    .then(async response => {
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('API Error Response:', errorData);
+            throw new Error(errorData.error || 'Ошибка генерации результатов');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('AI Generated Results:', data);
+
+        // Save AI-generated results along with local calculation
+        localStorage.setItem('testResults', JSON.stringify({
+            profile: localResults.profileName,
+            readinessScore: localResults.readinessScore,
+            aiGeneratedStrategy: data.message || data.aiGeneratedStrategy,
+            profileType: localResults.profileType,
+            personalizedMessage: data.message || localResults.personalizedMessage
+        }));
 
         window.location.href = 'results.html';
-    }, 1500);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        submitButton.textContent = originalText;
+        submitButton.disabled = false;
+
+        // Show detailed error message
+        const errorMsg = `Произошла ошибка при генерации результатов: ${error.message}\n\nПожалуйста, попробуйте еще раз.`;
+        alert(errorMsg);
+    });
 }
 
 function calculateTestResults(testData) {
