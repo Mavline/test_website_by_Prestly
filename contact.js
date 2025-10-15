@@ -108,13 +108,20 @@ function submitContactForm() {
     submitButton.textContent = 'Генерируем результаты...';
     submitButton.disabled = true;
 
+    // Calculate initial profile locally
+    const localResults = calculateTestResults(testData);
+
     // Real API call to generate AI-powered results
     fetch('/api/generate-results', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ testData })
+        body: JSON.stringify({
+            testData: testData,
+            profileType: localResults.profileType,
+            readinessScore: localResults.readinessScore
+        })
     })
     .then(response => {
         if (!response.ok) {
@@ -125,13 +132,13 @@ function submitContactForm() {
     .then(data => {
         console.log('AI Generated Results:', data);
 
-        // Save AI-generated results
+        // Save AI-generated results along with local calculation
         localStorage.setItem('testResults', JSON.stringify({
-            profile: data.profile,
-            readinessScore: data.readinessScore,
-            aiGeneratedStrategy: data.aiGeneratedStrategy,
-            profileType: data.profile?.toLowerCase().includes('оптимизатор') ? 'optimizer' :
-                        data.profile?.toLowerCase().includes('практик') ? 'strategist' : 'pioneer'
+            profile: localResults.profileName,
+            readinessScore: localResults.readinessScore,
+            aiGeneratedStrategy: data.message || data.aiGeneratedStrategy,
+            profileType: localResults.profileType,
+            personalizedMessage: data.message || localResults.personalizedMessage
         }));
 
         window.location.href = 'results.html';
