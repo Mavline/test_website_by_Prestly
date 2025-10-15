@@ -1,18 +1,9 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    }
-  ],
-  "env": {
-    "SITE_URL": "https://www.expertai.academy"
-  }
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/test", "destination": "/test.html" },
+    { "source": "/contact", "destination": "/contact.html" },
+    { "source": "/results", "destination": "/results.html" },
+    { "source": "/clear-data", "destination": "/clear-data.html" }
+  ]
 }
