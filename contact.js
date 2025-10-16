@@ -192,13 +192,13 @@ function submitContactForm() {
 }
 
 function calculateTestResults(testData) {
-    // Safety: normalize inside as well (на случай старого формата в LS)
+    // Safety: normalize inside as well
     testData = normalizeTestData(testData || {});
-    // Векторная система оценки по 3 архетипам
-    let optimizerScore = 0;    // О - Системный Оптимизатор
-    let strategistScore = 0;   // С - Дальновидный Практик  
-    let pioneerScore = 0;      // П - Энтузиаст-Экспериментатор
-    
+
+    // ЧЕСТНАЯ система подсчета баллов (от 0 до 100)
+    // Каждый вопрос оценивает РЕАЛЬНУЮ готовность к AI
+    let totalScore = 0;
+
     // Сохраняем ключевые ответы для персонализации
     let keyAnswers = {
         role: testData.q1 || '',
@@ -209,94 +209,103 @@ function calculateTestResults(testData) {
         superpower: testData.q9 || '',
         format: testData.q10 || ''
     };
-    
-    // Блок 1: Текущая реальность
-    
-    // Вопрос 1 (Роль)
-    if (testData.q1 === 'A') { optimizerScore += 2; }
-    else if (testData.q1 === 'B') { optimizerScore += 1; strategistScore += 1; }
-    else if (testData.q1 === 'C') { strategistScore += 2; pioneerScore += 1; }
-    else if (testData.q1 === 'D') { optimizerScore += 1; strategistScore += 1; }
-    
-    // Вопрос 2 (Рутина)
-    if (testData.q2 === 'A') { optimizerScore += 2; }
-    else if (testData.q2 === 'B') { optimizerScore += 1; pioneerScore += 1; }
-    else if (testData.q2 === 'C') { optimizerScore += 3; } // сильный сигнал
-    else if (testData.q2 === 'D') { optimizerScore += 1; strategistScore += 2; }
-    
-    // Вопрос 3 (Уровень)
-    if (testData.q3 === 'A') { optimizerScore += 1; strategistScore += 1; }
-    else if (testData.q3 === 'B') { strategistScore += 1; pioneerScore += 2; }
-    else if (testData.q3 === 'C') { optimizerScore += 1; strategistScore += 1; pioneerScore += 1; }
-    // D - нейтрально
-    
-    // Вопрос 4 (Влияние AI)
-    if (testData.q4 === 'A') { strategistScore += 2; pioneerScore += 1; }
-    else if (testData.q4 === 'B') { optimizerScore += 1; strategistScore += 1; }
-    // C, D - нейтрально
-    
-    // Блок 2: Препятствия
-    
-    // Вопрос 5 (Барьер)
-    if (testData.q5 === 'A') { optimizerScore += 3; } // ключевая боль
-    else if (testData.q5 === 'B') { optimizerScore += 1; strategistScore += 1; pioneerScore += 1; }
-    // C - нейтрально
-    else if (testData.q5 === 'D') { pioneerScore += 2; strategistScore += 1; }
-    
-    // Вопрос 6 (Опасение)
-    if (testData.q6 === 'A') { strategistScore += 3; } // ключевая боль
-    else if (testData.q6 === 'B') { optimizerScore += 1; strategistScore += 1; }
-    else if (testData.q6 === 'C') { pioneerScore += 1; optimizerScore += 1; }
-    else if (testData.q6 === 'D') { optimizerScore += 2; }
-    
-    // Вопрос 8 (Гипотетическая проблема)
-    if (testData.q8 === 'A') { optimizerScore += 2; }
-    else if (testData.q8 === 'B') { strategistScore += 1; pioneerScore += 1; }
-    else if (testData.q8 === 'C') { strategistScore += 2; }
-    else if (testData.q8 === 'D') { optimizerScore += 1; strategistScore += 1; }
-    
-    // Блок 3: Предпочитаемые решения
-    
-    // Вопрос 9 (Суперэффект)
-    if (testData.q9 === 'A') { optimizerScore += 3; }
-    else if (testData.q9 === 'B') { pioneerScore += 3; }
-    else if (testData.q9 === 'C') { optimizerScore += 1; pioneerScore += 2; }
-    else if (testData.q9 === 'D') { strategistScore += 3; }
-    
-    // Вопрос 11 (Что важнее)
-    if (testData.q11 === 'A') { strategistScore += 2; }
-    else if (testData.q11 === 'B') { optimizerScore += 2; pioneerScore += 1; }
-    // C, D - нейтрально
-    
-    // Вопрос 12 (Направление)
-    if (testData.q12 === 'A') { optimizerScore += 3; }
-    else if (testData.q12 === 'B') { pioneerScore += 3; strategistScore += 1; }
-    else if (testData.q12 === 'C') { strategistScore += 2; optimizerScore += 1; }
-    else if (testData.q12 === 'D') { pioneerScore += 2; }
-    
-    // Определяем доминантный архетип
-    let profileType = 'optimizer';
-    let profileName = 'Системный Оптимизатор';
-    let readinessScore = Math.min(95, 60 + optimizerScore * 2);
-    
-    if (strategistScore >= optimizerScore && strategistScore >= pioneerScore) {
-        profileType = 'strategist';
-        profileName = 'Дальновидный Практик';
-        readinessScore = Math.min(95, 65 + strategistScore * 2);
-    } else if (pioneerScore >= optimizerScore && pioneerScore >= strategistScore) {
-        profileType = 'pioneer';
-        profileName = 'Энтузиаст-Экспериментатор';
-        readinessScore = Math.min(95, 70 + pioneerScore * 2);
-    }
 
-    // Если по какой-то причине ни один ответ не распознан — выдать базовый уровень и явно пометить как «optimizer»
-    if (optimizerScore === 0 && strategistScore === 0 && pioneerScore === 0) {
-        profileType = 'optimizer';
-        profileName = 'Системный Оптимизатор';
-        readinessScore = 45; // безопасное дефолтное значение, чтобы не застревать на 65
-    }
+    // q1: Роль (макс 8 баллов)
+    if (testData.q1 === 'A') totalScore += 4;      // Исполнитель - средняя готовность
+    else if (testData.q1 === 'B') totalScore += 6; // Координатор - выше средней
+    else if (testData.q1 === 'C') totalScore += 8; // Стратег - высокая готовность
+    else if (testData.q1 === 'D') totalScore += 5; // Универсал - средняя
 
-    const clientType = readinessScore >= 75 ? 'hot' : readinessScore >= 55 ? 'warm' : 'cold';
+    // q2: Рутинные задачи (макс 8 баллов)
+    if (testData.q2 === 'A') totalScore += 7;      // Обработка инфо - хорошо для AI
+    else if (testData.q2 === 'B') totalScore += 7; // Контент - хорошо для AI
+    else if (testData.q2 === 'C') totalScore += 8; // Монотонные операции - идеально для AI
+    else if (testData.q2 === 'D') totalScore += 7; // Анализ данных - хорошо для AI
+
+    // q3: Уровень владения инструментами (макс 8 баллов)
+    if (testData.q3 === 'A') totalScore += 5;      // Уверенный пользователь
+    else if (testData.q3 === 'B') totalScore += 7; // Энтузиаст - высокая готовность
+    else if (testData.q3 === 'C') totalScore += 8; // Power User - максимальная готовность
+    else if (testData.q3 === 'D') totalScore += 2; // Новичок - низкая готовность
+
+    // q4: Влияние AI на отрасль (макс 8 баллов)
+    if (testData.q4 === 'A') totalScore += 8;      // Критическое - понимает важность
+    else if (testData.q4 === 'B') totalScore += 6; // Значительное
+    else if (testData.q4 === 'C') totalScore += 3; // Умеренное - слабое понимание
+    else if (testData.q4 === 'D') totalScore += 1; // Неясно - очень слабое понимание
+
+    // q5: Главный барьер (макс 5 баллов - барьеры снижают готовность)
+    if (testData.q5 === 'A') totalScore += 4;      // Нехватка времени - слабый барьер
+    else if (testData.q5 === 'B') totalScore += 5; // Инфо перегруз - средний барьер
+    else if (testData.q5 === 'C') totalScore += 2; // Техническая сложность - сильный барьер
+    else if (testData.q5 === 'D') totalScore += 1; // Нет задачи - очень сильный барьер
+
+    // q6: Опасения (макс 6 баллов)
+    if (testData.q6 === 'A') totalScore += 3;      // Замена AI - сильное опасение
+    else if (testData.q6 === 'B') totalScore += 5; // Безопасность - разумное опасение
+    else if (testData.q6 === 'C') totalScore += 6; // Черный ящик - технически подкованное
+    else if (testData.q6 === 'D') totalScore += 4; // Бюджеты - преодолимое опасение
+
+    // q7: Трудности в обучении (макс 7 баллов)
+    if (testData.q7 === 'A') totalScore += 5;      // Найти материалы
+    else if (testData.q7 === 'B') totalScore += 6; // Совмещать с работой
+    else if (testData.q7 === 'C') totalScore += 4; // Нет наставника
+    else if (testData.q7 === 'D') totalScore += 7; // Теория→практика (хороший признак)
+
+    // q8: Гипотетические проблемы (макс 6 баллов)
+    if (testData.q8 === 'A') totalScore += 4;      // Не получу пользу
+    else if (testData.q8 === 'B') totalScore += 3; // Не оценят
+    else if (testData.q8 === 'C') totalScore += 6; // Устареет - понимает динамику
+    else if (testData.q8 === 'D') totalScore += 5; // Ошибка
+
+    // q9: Суперэффект (макс 8 баллов)
+    if (testData.q9 === 'A') totalScore += 7;      // Освободить время
+    else if (testData.q9 === 'B') totalScore += 8; // Генерация идей - высокая мотивация
+    else if (testData.q9 === 'C') totalScore += 7; // Персональный ассистент
+    else if (testData.q9 === 'D') totalScore += 8; // Повысить стоимость - бизнес-мышление
+
+    // q10: Формат обучения (макс 8 баллов)
+    if (testData.q10 === 'A') totalScore += 6;      // Короткий интенсив
+    else if (testData.q10 === 'B') totalScore += 7; // Комплексный курс - серьезный подход
+    else if (testData.q10 === 'C') totalScore += 8; // Практический воркшоп - максимум вовлеченности
+    else if (testData.q10 === 'D') totalScore += 5; // Самостоятельно
+
+    // q11: Что важнее в обучении (макс 8 баллов)
+    if (testData.q11 === 'A') totalScore += 7;      // Фундаментальные знания
+    else if (testData.q11 === 'B') totalScore += 8; // Практические инструменты - готов применять
+    else if (testData.q11 === 'C') totalScore += 6; // Поддержка
+    else if (testData.q11 === 'D') totalScore += 5; // Гибкость
+
+    // q12: Направление (макс 8 баллов)
+    if (testData.q12 === 'A') totalScore += 8;      // Автоматизация - конкретное применение
+    else if (testData.q12 === 'B') totalScore += 7; // Чат-боты
+    else if (testData.q12 === 'C') totalScore += 7; // Анализ данных
+    else if (testData.q12 === 'D') totalScore += 7; // Генерация контента
+
+    // Максимум возможных баллов = 96
+    // Приводим к шкале 0-100
+    const readinessScore = Math.round((totalScore / 96) * 100);
+
+    // ЧЕСТНАЯ градация профилей (на основе балла готовности)
+    let profileType, profileName, clientType;
+
+    if (readinessScore >= 76) {
+        profileType = 'expert';
+        profileName = 'Эксперт';
+        clientType = 'hot';
+    } else if (readinessScore >= 56) {
+        profileType = 'practitioner';
+        profileName = 'Практик';
+        clientType = 'warm-hot';
+    } else if (readinessScore >= 31) {
+        profileType = 'explorer';
+        profileName = 'Исследователь';
+        clientType = 'warm';
+    } else {
+        profileType = 'observer';
+        profileName = 'Наблюдатель';
+        clientType = 'cold';
+    }
 
     return {
         readinessScore,
@@ -304,63 +313,50 @@ function calculateTestResults(testData) {
         profileType,
         profileName,
         keyAnswers,
-        vectors: {
-            optimizer: optimizerScore,
-            strategist: strategistScore,
-            pioneer: pioneerScore
-        },
+        rawScore: totalScore,
+        maxScore: 96,
         recommendations: buildRecommendations(testData, profileType),
-        personalizedMessage: generatePersonalizedMessage(profileType, testData, keyAnswers)
+        personalizedMessage: generatePersonalizedMessage(profileType, testData, keyAnswers, readinessScore)
     };
 }
 
 function buildRecommendations(testData, profileType) {
     const rec = [];
-    
-    // Рекомендации по новым архетипам
-    switch (profileType) {
-        case 'optimizer':
-            rec.push('Начните с автоматизации одной конкретной рутинной задачи');
-            rec.push('Используйте готовые воркфлоу с измеримым ROI');
-            rec.push('Внедряйте решения поэтапно с контролем результата');
-            break;
-        case 'strategist':
-            rec.push('Изучите AI-инструменты, повышающие вашу ценность на рынке');
-            rec.push('Получите сертификацию по работе с AI в вашей сфере');
-            rec.push('Станьте экспертом по AI в своей команде/компании');
-            break;
-        case 'pioneer':
-            rec.push('Экспериментируйте с созданием уникальных AI-решений');
-            rec.push('Разрабатывайте собственные агенты и воркфлоу');
-            rec.push('Создавайте инновационные продукты с использованием AI');
-            break;
-    }
 
-    // Добавляем рекомендации на основе направления (q12)
-    if (testData.q12 === 'A') {
-        rec.push('Освойте no-code платформы для автоматизации');
-    } else if (testData.q12 === 'B') {
-        rec.push('Начните с простого чат-бота для вашей задачи');
+    // Рекомендации по новым профилям
+    switch (profileType) {
+        case 'expert':
+            rec.push('Создавайте сложные AI-агенты и системы автоматизации');
+            rec.push('Монетизируйте ваши AI-навыки через консалтинг или продукты');
+            rec.push('Станьте AI-лидером в вашей команде или компании');
+            rec.push('Делитесь опытом и обучайте других');
+            break;
+        case 'practitioner':
+            rec.push('Внедряйте AI в свои ежедневные рабочие процессы');
+            rec.push('Изучайте продвинутые техники промптинга и автоматизации');
+            rec.push('Создавайте собственные воркфлоу для конкретных задач');
+            rec.push('Измеряйте ROI от внедрения AI-инструментов');
+            break;
+        case 'explorer':
+            rec.push('Пробуйте разные AI-инструменты для ваших задач');
+            rec.push('Начните с простых кейсов: резюме текстов, генерация идей');
+            rec.push('Изучайте базовые концепции промптинга');
+            rec.push('Найдите сообщество практиков для обмена опытом');
+            break;
+        case 'observer':
+            rec.push('Познакомьтесь с базовыми AI-инструментами (ChatGPT, Claude)');
+            rec.push('Развейте мифы и страхи про AI через практику');
+            rec.push('Найдите одну конкретную задачу для применения AI');
+            rec.push('Пройдите короткий вводный курс по AI');
+            break;
     }
 
     return rec.slice(0, 4);
 }
 
-function generatePersonalizedMessage(profileType, testData, keyAnswers) {
+function generatePersonalizedMessage(profileType, testData, keyAnswers, readinessScore) {
     // Получаем текстовые варианты ответов для цитирования
     const answerTexts = {
-        q1: {
-            'A': 'исполнитель, отвечающий за конкретные задачи',
-            'B': 'координатор/менеджер процессов',
-            'C': 'стратег, определяющий вектор развития',
-            'D': 'универсальный специалист'
-        },
-        q2: {
-            'A': 'обработка информации',
-            'B': 'создание контента',
-            'C': 'монотонные операции',
-            'D': 'анализ данных'
-        },
         q5: {
             'A': 'нехватка времени',
             'B': 'информационный перегруз',
@@ -378,45 +374,48 @@ function generatePersonalizedMessage(profileType, testData, keyAnswers) {
             'B': 'генерация идей и решений',
             'C': 'персональный AI-ассистент',
             'D': 'повышение профессиональной ценности'
-        },
-        q10: {
-            'A': 'короткий мастер-класс',
-            'B': 'комплексный курс',
-            'C': 'практический воркшоп',
-            'D': 'самостоятельное изучение'
         }
     };
-    
+
     switch (profileType) {
-        case 'optimizer':
-            return `Системный Оптимизатор: Вы видите хаос и инстинктивно хотите превратить его в систему.
+        case 'expert':
+            return `**Эксперт** (${readinessScore}/100) — Вы в топ-25% по готовности к AI!
 
-Вы не гонитесь за хайпом. Для вас технология — это рычаг, а не игрушка. Ваша главная цель — найти узкие места в своей работе и расширить их с помощью AI. 
+Вы демонстрируете высокий уровень технической подкованности и стратегического мышления. Ваш результат показывает, что вы не просто интересуетесь AI, а готовы применять его на серьезном уровне.
 
-Вы ответили, что ваш главный барьер — "${answerTexts.q5[keyAnswers.barrier] || 'неопределенный барьер'}", а больше всего вас привлекает возможность "${answerTexts.q9[keyAnswers.superpower] || 'неопределенный эффект'}". Это классические признаки человека, который ценит предсказуемый результат и эффективность.
+Ваша мотивация — "${answerTexts.q9[keyAnswers.superpower] || 'профессиональное развитие'}" — говорит о том, что вы понимаете истинную ценность AI-навыков. Вам не нужны базовые курсы.
 
-Ваш идеальный следующий шаг: Вам не нужен долгий теоретический курс обо всём. Вам нужно точечное, мощное решение, которое можно внедрить за выходные и в понедельник уже увидеть результат.`;
-            
-        case 'strategist':
-            return `Дальновидный Практик: Вы понимаете, что мир меняется, и хотите быть среди тех, кто формирует будущее.
+Что дальше: Вам нужны сложные проекты, экспертное сообщество и возможности для монетизации ваших знаний. Рассмотрите консалтинг, создание собственных AI-решений или партнерство в AI-проектах.`;
 
-Для вас AI — это не просто инструмент оптимизации, а способ кардинально повысить свою ценность на рынке. Вы видите долгосрочную перспективу и готовы инвестировать в глубокие знания.
+        case 'practitioner':
+            return `**Практик** (${readinessScore}/100) — Вы на правильном пути!
 
-Ваше главное опасение — "${answerTexts.q6[keyAnswers.fear] || 'неопределенные риски'}", а цель — "${answerTexts.q9[keyAnswers.superpower] || 'профессиональный рост'}". Это показывает человека, который думает стратегически и понимает важность опережающего развития.
+Ваш результат показывает хорошую базу для внедрения AI. Вы активно используете цифровые инструменты и видите конкретные задачи для AI.
 
-Ваш идеальный следующий шаг: Вам нужны не поверхностные навыки, а глубокая экспертность, которая сделает вас незаменимым специалистом в новой AI-реальности.`;
-            
-        case 'pioneer':
-            return `Энтузиаст-Экспериментатор: Вы не хотите просто использовать готовые решения — вы хотите создавать новое.
+Главный барьер — "${answerTexts.q5[keyAnswers.barrier] || 'неопределенные препятствия'}". Это преодолимо! Вас привлекает "${answerTexts.q9[keyAnswers.superpower] || 'практическое применение'}" — это правильная мотивация.
 
-Для вас AI — это не инструмент для оптимизации существующего, а платформа для создания того, чего раньше не было. Вы видите возможности там, где другие видят ограничения.
+Что дальше: Вам нужна структура и практика. Воркшопы, где вы создадите реальные AI-воркфлоу для своих задач, дадут максимальный результат. Фокус на ROI и измеримые улучшения.`;
 
-Вы стремитесь к "${answerTexts.q9[keyAnswers.superpower] || 'творческим возможностям'}" и готовы экспериментировать. Ваш барьер — "${answerTexts.q5[keyAnswers.barrier] || 'неопределенные препятствия'}", но это не останавливает вас от поиска нестандартных решений.
+        case 'explorer':
+            return `**Исследователь** (${readinessScore}/100) — Есть интерес, нужна систематизация.
 
-Ваш идеальный следующий шаг: Вам нужна не инструкция, а "песочница" и проводник, который поможет превратить ваши идеи в работающие AI-решения.`;
-            
+Вы интересуетесь AI, но пока действуете без четкой системы. Ваш результат честно отражает текущее состояние — есть потенциал, но нужна поддержка.
+
+Барьер — "${answerTexts.q5[keyAnswers.barrier] || 'неопределенные препятствия'}" — типичен для вашего уровня. Опасение "${answerTexts.q6[keyAnswers.fear] || 'неясные риски'}" также понятно.
+
+Что дальше: Вам нужны простые кейсы с быстрым результатом и поддерживающее сообщество. Начните с базовых инструментов (ChatGPT, Claude) для конкретных задач. Вводный курс даст структуру.`;
+
+        case 'observer':
+            return `**Наблюдатель** (${readinessScore}/100) — Начало пути.
+
+Ваш результат показывает низкую текущую готовность. Это честная оценка, не приговор! У вас либо сильные опасения, либо пока нет четкого понимания, как применить AI.
+
+Барьер — "${answerTexts.q5[keyAnswers.barrier] || 'отсутствие задачи'}" и опасение "${answerTexts.q6[keyAnswers.fear] || 'неясные риски'}" мешают начать.
+
+Что дальше: Вам нужно снять страхи и увидеть AI "в деле". Бесплатные материалы, простые примеры из вашей сферы, развенчание мифов. Первая задача — просто попробовать, без обязательств.`;
+
         default:
-            return 'Ваш уникальный профиль готовности к AI определен. Получите персональные рекомендации по развитию навыков.';
+            return `Ваш уникальный профиль готовности к AI определен (${readinessScore}/100). Получите персональные рекомендации по развитию навыков.`;
     }
 }
 
