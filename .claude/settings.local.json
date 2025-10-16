@@ -37,7 +37,8 @@
       "mcp__vercel__get_project",
       "Bash(GIT_AUTHOR_NAME=\"Pavel\" GIT_AUTHOR_EMAIL=\"pavelkpw@users.noreply.github.com\" GIT_COMMITTER_NAME=\"Pavel\" GIT_COMMITTER_EMAIL=\"pavelkpw@users.noreply.github.com\" git commit -m \"$(cat <<''EOF''\nUpdate Claude settings and API documentation\n\n- Added Vercel MCP tool permissions (deploy, list projects/teams/deployments)\n- Updated API integration guide with latest implementation details\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git remote get-url:*)",
-      "Bash(gh auth:*)"  
+      "Bash(gh auth:*)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []
