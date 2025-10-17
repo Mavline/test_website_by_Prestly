@@ -26,6 +26,28 @@ const ALL_ARCHETYPES = [
     'Искатель'
 ];
 
+// Synonyms to map 4-tier labels or close Russian names into wheel archetypes
+const ARCHETYPE_SYNONYMS = {
+    'Практик': 'Прагматик',
+    'Эксперт': 'Оптимизатор',
+    'Исследователь': 'Искатель',
+    'Наблюдатель': 'Наблюдатель',
+    'Стратег': 'Визионер',
+    'Координатор': 'Универсал'
+};
+
+function resolveArchetypeName(name) {
+    if (!name) return 'Оптимизатор';
+    // exact
+    if (ALL_ARCHETYPES.includes(name)) return name;
+    // synonyms
+    if (ARCHETYPE_SYNONYMS[name]) return ARCHETYPE_SYNONYMS[name];
+    // fuzzy: try by lowercase includes
+    const n = String(name).toLowerCase();
+    const hit = ALL_ARCHETYPES.find(a => a.toLowerCase().includes(n) || n.includes(a.toLowerCase()));
+    return hit || 'Оптимизатор';
+}
+
 // Wheel colors - gradient colors for each sector
 const WHEEL_COLORS = [
     '#ff6b6b',
@@ -57,8 +79,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Создаём колесо фортуны и запускаем вращение с последующей остановкой на архетипе
     createSpinningWheel();
 
-    // Получаем название архетипа из ответа ИИ (парсится в contact.js)
-    const archetypeName = results.archetype || results.profileName || ARCHETYPE_MAPPING[results.profileType] || 'Оптимизатор';
+    // Получаем название архетипа и приводим к валидному элементу колеса
+    const archetypeNameRaw = results.archetype || results.profileName || ARCHETYPE_MAPPING[results.profileType] || 'Оптимизатор';
+    const archetypeName = resolveArchetypeName(archetypeNameRaw);
     let fullText = (results.personalizedMessage || results.aiGeneratedStrategy || results.message || '').trim();
 
     // Стартуем быстрое вращение и размытие подписей, затем плавно останавливаемся на выбранном архетипе
@@ -256,8 +279,8 @@ function stopOnArchetype(archetypeName, onStop) {
     // Find the index of the target archetype
     const targetIndex = ALL_ARCHETYPES.indexOf(archetypeName);
     if (targetIndex === -1) {
-        console.error('Archetype not found:', archetypeName);
-        return;
+        console.warn('Archetype not found, using fallback:', archetypeName);
+        return stopOnArchetype('Оптимизатор', onStop);
     }
 
     // Calculate target angle

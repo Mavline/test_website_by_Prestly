@@ -152,6 +152,7 @@ function submitContactForm() {
     localStorage.setItem('pendingAIRequest', JSON.stringify(aiPayload));
 
     // Real API call to generate AI-powered results
+    console.log('AI request starting to /api/generate-results', aiPayload);
     fetch('/api/generate-results', {
         method: 'POST',
         headers: {
@@ -161,6 +162,7 @@ function submitContactForm() {
         keepalive: true
     })
     .then(async response => {
+        console.log('AI response status:', response.status);
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             console.error('API Error Response:', errorData);
