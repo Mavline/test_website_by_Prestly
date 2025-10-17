@@ -59,13 +59,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Получаем название архетипа из ответа ИИ (парсится в contact.js)
     const archetypeName = results.archetype || results.profileName || ARCHETYPE_MAPPING[results.profileType] || 'Оптимизатор';
+    const fullText = (results.personalizedMessage || results.aiGeneratedStrategy || results.message || '').trim();
 
     // Стартуем быстрое вращение и размытие подписей, затем плавно останавливаемся на выбранном архетипе
     startSpinning();
     setTimeout(() => {
-        // Плавно останавливаем колесо на выбранном архетипе;
-        // эффект размытия снимется внутри stopOnArchetype по завершении анимации
-        stopOnArchetype(archetypeName);
+        // Плавно останавливаем колесо на выбранном архетипе
+        stopOnArchetype(archetypeName, () => {
+            const profileElement = document.getElementById('profile-type');
+            if (profileElement) profileElement.textContent = archetypeName;
+            setTimeout(() => revealDescription(fullText), 1000);
+        });
     }, 1000);
 
     // Update score display
@@ -74,21 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
         scoreElement.textContent = results.readinessScore;
     }
 
-    // Обновляем отображение архетипа из ответа ИИ
-    const profileElement = document.getElementById('profile-type');
-    if (profileElement) {
-        profileElement.textContent = archetypeName;
-    }
-
-    // Update personalized diagnostic message
-    const messageElement = document.getElementById('personalized-message');
-    if (messageElement) {
-        const fullText = (results.personalizedMessage || results.aiGeneratedStrategy || results.message || '').trim();
-        if (fullText) {
-            const paragraphs = fullText.split(/\n{2,}/);
-            messageElement.innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
-        }
-    }
+    // Текст и заголовок покажем после остановки колеса (см. выше)
 
     // Generate full personal strategy consultation
     const strategyElement = document.getElementById('personalStrategy');
@@ -208,8 +198,8 @@ function startSpinning() {
     if (isSpinning) return;
 
     isSpinning = true;
-    const wheel = document.getElementById('fortuneWheel');
-    if (!wheel) return;
+    const group = document.getElementById('fortuneWheelGroup');
+    if (!group) return;
 
     const wc = document.querySelector('.wheel-container');
     if (wc) wc.classList.add('spinning');
@@ -217,7 +207,7 @@ function startSpinning() {
     // Fast continuous rotation
     spinInterval = setInterval(() => {
         wheelRotation += 5; // 5 degrees per frame
-        wheel.style.transform = `rotate(${wheelRotation}deg)`;
+        group.style.transform = `rotate(${wheelRotation}deg)`;
     }, 16); // ~60fps
 }
 
@@ -225,11 +215,11 @@ function startSpinning() {
  * Stops the wheel on a specific archetype with smooth deceleration
  * @param {string} archetypeName - Name of the archetype to land on
  */
-function stopOnArchetype(archetypeName) {
+function stopOnArchetype(archetypeName, onStop) {
     if (!isSpinning) return;
 
-    const wheel = document.getElementById('fortuneWheel');
-    if (!wheel) return;
+    const group = document.getElementById('fortuneWheelGroup');
+    if (!group) return;
 
     // Stop the fast spinning
     clearInterval(spinInterval);
@@ -264,18 +254,37 @@ function stopOnArchetype(archetypeName) {
     const finalRotation = wheelRotation + (targetRotation - normalizedCurrent);
 
     // Smooth deceleration animation
-    wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
-    wheel.style.transform = `rotate(${finalRotation}deg)`;
+    group.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+    group.style.transform = `rotate(${finalRotation}deg)`;
 
     wheelRotation = finalRotation;
 
     // Optional: highlight the winning sector after animation completes
     setTimeout(() => {
         console.log('Wheel stopped on:', archetypeName);
-        // После остановки убираем размытие подписей
+        highlightWinningSector(archetypeName);
         const wc = document.querySelector('.wheel-container');
         if (wc) wc.classList.remove('spinning');
+        if (typeof onStop === 'function') onStop();
     }, 4000);
+}
+
+function highlightWinningSector(archetypeName) {
+    const idx = ALL_ARCHETYPES.indexOf(archetypeName);
+    if (idx === -1) return;
+    const path = document.querySelector(`.sector path[data-index="${idx}"]`);
+    const text = document.querySelector(`text.label-text[data-index="${idx}"]`);
+    if (path) path.classList.add('winning-sector');
+    if (text) text.classList.add('winning-label');
+}
+
+function revealDescription(fullText) {
+    const messageElement = document.getElementById('personalized-message');
+    if (!messageElement) return;
+    const text = (fullText || '').trim();
+    if (!text) return;
+    const paragraphs = text.split(/\n{2,}/);
+    messageElement.innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
 }
 
 function displayResults(results, userData) {
@@ -645,9 +654,10 @@ function animateSpeedometer(targetScore) {
     const style = document.createElement('style');
     style.textContent = `
     .wheel-container { overflow: hidden; }
-    .wheel-container.spinning .wheel-label { filter: blur(3px); opacity: 0.65; transition: filter .2s linear, opacity .2s linear; }
-    .wheel-container:not(.spinning) .wheel-label { filter: none; opacity: 1; }
-    .wheel-label { max-width: 90px; overflow: hidden; text-overflow: ellipsis; }
+    .wheel-container.spinning text.label-text { filter: blur(2px); opacity: 0.7; transition: filter .2s linear, opacity .2s linear; }
+    .wheel-container:not(.spinning) text.label-text { filter: none; opacity: 1; }
+    .sector path.winning-sector { filter: drop-shadow(0 0 8px rgba(255,255,255,0.6)); stroke:#fff; stroke-width:3; transform: scale(1.04); transform-box: fill-box; transform-origin: 50% 50%; }
+    text.winning-label { font-size: 1.2em; font-weight: 800; }
     `;
     document.head.appendChild(style);
 })();

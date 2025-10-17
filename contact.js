@@ -951,34 +951,55 @@ function createLoadingSpinningWheel() {
     const centerY = size / 2;
     const radius = size / 2 - 10;
     const segmentAngle = 360 / archetypes.length;
+    const angleRad = (Math.PI * 2) / archetypes.length;
+    const fontSize = Math.max(10, Math.round(size * 0.045));
 
-    let svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" id="loadingWheelSVG" style="filter: drop-shadow(0 4px 20px rgba(0,0,0,0.5));">
+    // Build clipPaths first
+    let defs = '<defs>';
+    for (let i = 0; i < archetypes.length; i++) {
+        const startAngle = i * segmentAngle - 90;
+        const endAngle = (i + 1) * segmentAngle - 90;
+        const sr = (startAngle * Math.PI) / 180;
+        const er = (endAngle * Math.PI) / 180;
+        const x1 = centerX + radius * Math.cos(sr);
+        const y1 = centerY + radius * Math.sin(sr);
+        const x2 = centerX + radius * Math.cos(er);
+        const y2 = centerY + radius * Math.sin(er);
+        const d = `M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} Z`;
+        defs += `<clipPath id="lwclip-${i}"><path d="${d}"/></clipPath>`;
+    }
+    defs += '</defs>';
+
+    let svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" id="loadingWheelSVG" style="filter: drop-shadow(0 4px 20px rgba(0,0,0,0.5));">${defs}
         <g id="loadingWheelGroup" style="transform-box: fill-box; transform-origin: 50% 50%;">
     `;
 
-    archetypes.forEach((archetype, i) => {
+    for (let i = 0; i < archetypes.length; i++) {
         const startAngle = i * segmentAngle - 90;
         const endAngle = (i + 1) * segmentAngle - 90;
-
-        const x1 = centerX + radius * Math.cos(startAngle * Math.PI / 180);
-        const y1 = centerY + radius * Math.sin(startAngle * Math.PI / 180);
-        const x2 = centerX + radius * Math.cos(endAngle * Math.PI / 180);
-        const y2 = centerY + radius * Math.sin(endAngle * Math.PI / 180);
+        const sr = (startAngle * Math.PI) / 180;
+        const er = (endAngle * Math.PI) / 180;
+        const x1 = centerX + radius * Math.cos(sr);
+        const y1 = centerY + radius * Math.sin(sr);
+        const x2 = centerX + radius * Math.cos(er);
+        const y2 = centerY + radius * Math.sin(er);
 
         svg += `<path d="M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} Z"
                 fill="${colors[i]}" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>`;
 
-        const textAngle = startAngle + segmentAngle / 2;
-        const textRadius = radius * 0.65;
-        const textX = centerX + textRadius * Math.cos(textAngle * Math.PI / 180);
-        const textY = centerY + textRadius * Math.sin(textAngle * Math.PI / 180);
+        const mid = (startAngle + endAngle) / 2;
+        const tr = radius * 0.62;
+        const tx = centerX + tr * Math.cos((mid * Math.PI) / 180);
+        const ty = centerY + tr * Math.sin((mid * Math.PI) / 180);
+        const textLen = Math.max(40, Math.round(tr * angleRad * 0.85));
 
-        svg += `<text class="wheel-text" x="${textX}" y="${textY}"
-                fill="white" font-size="13" font-weight="600"
+        svg += `<text class="wheel-text" x="${tx}" y="${ty}"
+                fill="white" font-size="${fontSize}" font-weight="700"
                 text-anchor="middle" dominant-baseline="middle"
-                transform="rotate(${textAngle + 90}, ${textX}, ${textY})"
-                style="text-shadow: 1px 1px 3px rgba(0,0,0,0.8); pointer-events: none;">${archetype}</text>`;
-    });
+                transform="rotate(${mid + 90}, ${tx}, ${ty})"
+                clip-path="url(#lwclip-${i})" lengthAdjust="spacingAndGlyphs" textLength="${textLen}"
+                style="text-shadow: 1px 1px 3px rgba(0,0,0,0.8); pointer-events: none;">${archetypes[i]}</text>`;
+    }
 
     // центр (внутри вращающейся группы)
     svg += `<circle cx="${centerX}" cy="${centerY}" r="25" fill="rgba(255,255,255,0.9)" stroke="rgba(0,0,0,0.3)" stroke-width="2"/>
