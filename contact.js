@@ -172,7 +172,7 @@ function submitContactForm() {
             archetype: archetype  // Add archetype for spinning wheel
         }));
 
-        // Save to Google Sheets
+        // Save to Google Sheets (как было раньше — после получения ответа ИИ)
         const sheetsData = {
             ...formData,
             ...testData,
@@ -194,7 +194,7 @@ function submitContactForm() {
         })
         .catch(error => {
             console.error('Error saving to Google Sheets:', error);
-            // Don't block navigation if sheets save fails
+            // Не блокируем переход, если сохранение в таблицу не удалось
         });
 
         // Hide loading overlay before navigation
@@ -237,95 +237,7 @@ function showLoadingOverlay() {
     document.body.style.overflow = 'hidden';
 }
 
-function createLoadingSpinningWheel() {
-    const archetypes = [
-        'Оптимизатор',
-        'Визионер',
-        'Прагматик',
-        'Предприниматель',
-        'Энтузиаст',
-        'Скептик',
-        'Наблюдатель',
-        'Универсал',
-        'Аналитик',
-        'Искатель'
-    ];
-
-    const colors = [
-        '#ff6b6b', '#4ecdc4', '#45b7d1', '#a8dadc', '#f1c40f',
-        '#e74c3c', '#3498db', '#9b59b6', '#2ecc71', '#e67e22'
-    ];
-
-    const container = document.getElementById('loadingWheel');
-    if (!container) return;
-
-    const size = 280;
-    const centerX = size / 2;
-    const centerY = size / 2;
-    const radius = size / 2 - 10;
-    const segmentAngle = 360 / archetypes.length;
-
-    let svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" id="wheelSVG" style="filter: drop-shadow(0 4px 20px rgba(0,0,0,0.5));">`;
-
-    archetypes.forEach((archetype, i) => {
-        const startAngle = i * segmentAngle - 90;
-        const endAngle = (i + 1) * segmentAngle - 90;
-
-        const x1 = centerX + radius * Math.cos(startAngle * Math.PI / 180);
-        const y1 = centerY + radius * Math.sin(startAngle * Math.PI / 180);
-        const x2 = centerX + radius * Math.cos(endAngle * Math.PI / 180);
-        const y2 = centerY + radius * Math.sin(endAngle * Math.PI / 180);
-
-        svg += `<path d="M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} Z"
-                fill="${colors[i]}"
-                stroke="rgba(255,255,255,0.3)"
-                stroke-width="2"/>`;
-
-        const textAngle = startAngle + segmentAngle / 2;
-        const textRadius = radius * 0.65;
-        const textX = centerX + textRadius * Math.cos(textAngle * Math.PI / 180);
-        const textY = centerY + textRadius * Math.sin(textAngle * Math.PI / 180);
-
-        svg += `<text x="${textX}" y="${textY}"
-                fill="white"
-                font-size="13"
-                font-weight="600"
-                text-anchor="middle"
-                dominant-baseline="middle"
-                transform="rotate(${textAngle + 90}, ${textX}, ${textY})"
-                style="text-shadow: 1px 1px 3px rgba(0,0,0,0.8); pointer-events: none;">${archetype}</text>`;
-    });
-
-    svg += `<circle cx="${centerX}" cy="${centerY}" r="25" fill="rgba(255,255,255,0.9)" stroke="rgba(0,0,0,0.3)" stroke-width="2"/>`;
-    svg += `<circle cx="${centerX}" cy="${centerY}" r="15" fill="rgba(255,107,107,0.8)"/>`;
-
-    const arrowSize = 25;
-    const arrowY = 5;
-    svg += `<path d="M ${centerX} ${arrowY} L ${centerX - arrowSize/2} ${arrowY + arrowSize} L ${centerX + arrowSize/2} ${arrowY + arrowSize} Z"
-            fill="#ff3333"
-            stroke="rgba(255,255,255,0.9)"
-            stroke-width="2"
-            style="filter: drop-shadow(0 2px 8px rgba(255,51,51,0.6));"/>`;
-    svg += `<circle cx="${centerX}" cy="${arrowY + arrowSize + 5}" r="8" fill="rgba(255,51,51,0.9)" stroke="white" stroke-width="2"/>`;
-
-    svg += '</svg>';
-
-    container.innerHTML = svg;
-
-    // Start spinning animation
-    let rotation = 0;
-    const wheel = document.getElementById('wheelSVG');
-    const spinInterval = setInterval(() => {
-        rotation += 5;
-        if (rotation >= 360) rotation = 0;
-        wheel.style.transform = `rotate(${rotation}deg)`;
-        wheel.style.transformOrigin = 'center';
-        wheel.style.transition = 'none';
-    }, 16); // 60 FPS
-
-    // Store interval ID to stop later if needed
-    window.loadingWheelInterval = spinInterval;
-}
+// createLoadingSpinningWheel — см. переопределение ниже (современная версия с вращаемой группой и clipPath)
 
 function hideLoadingOverlay() {
     // Stop wheel spinning animation
