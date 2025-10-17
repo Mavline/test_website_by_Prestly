@@ -76,6 +76,44 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
+    // Если нет текста от ИИ — запускаем запрос немедленно на странице результатов
+    (async function startAIRequestIfNeeded(){
+        try {
+            const stored = JSON.parse(localStorage.getItem('testResults') || '{}');
+            const hasText = (stored.personalizedMessage || stored.aiGeneratedStrategy || stored.message || '').trim().length > 0;
+            const pending = JSON.parse(localStorage.getItem('pendingAIRequest') || 'null');
+            if (!hasText && pending && pending.testData) {
+                console.log('results.js: starting AI request (page init) with payload', pending);
+                const resp = await fetch('/api/generate-results', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(pending)
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const text = (data.message || data.aiGeneratedStrategy || '').trim();
+                    console.log('results.js: AI response received on results page');
+                    const merged = Object.assign({}, stored, {
+                        personalizedMessage: text,
+                        aiGeneratedStrategy: text
+                    });
+                    localStorage.setItem('testResults', JSON.stringify(merged));
+                    localStorage.removeItem('pendingAIRequest');
+                    // если колесо уже остановилось и текстовый блок есть — показать сразу
+                    const messageElement = document.getElementById('personalized-message');
+                    if (messageElement && text) {
+                        const paragraphs = text.split(/\n{2,}/);
+                        messageElement.innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
+                    }
+                } else {
+                    console.warn('results.js: AI request failed with status', resp.status);
+                }
+            }
+        } catch (e) {
+            console.error('results.js: startAIRequestIfNeeded error', e);
+        }
+    })();
+
     // Создаём колесо фортуны и запускаем вращение с последующей остановкой на архетипе
     createSpinningWheel();
 
