@@ -112,6 +112,24 @@ function createSpinningWheel() {
     const radius = size / 2 - 10;
     const numSectors = ALL_ARCHETYPES.length;
     const anglePerSector = 360 / numSectors;
+    const angleRad = (Math.PI * 2) / numSectors;
+    const fontSize = Math.max(10, Math.round(size * 0.045));
+
+    // Build clipPaths for each sector
+    let clipDefs = '';
+    for (let i = 0; i < numSectors; i++) {
+        const startAngle = i * anglePerSector - 90;
+        const endAngle = (i + 1) * anglePerSector - 90;
+        const sr = (startAngle * Math.PI) / 180;
+        const er = (endAngle * Math.PI) / 180;
+        const x1 = centerX + radius * Math.cos(sr);
+        const y1 = centerY + radius * Math.sin(sr);
+        const x2 = centerX + radius * Math.cos(er);
+        const y2 = centerY + radius * Math.sin(er);
+        const largeArc = anglePerSector > 180 ? 1 : 0;
+        const pathData = `M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+        clipDefs += `<clipPath id="wheelClip-${i}"><path d="${pathData}"></path></clipPath>`;
+    }
 
     // Create SVG
     let svgHTML = `
@@ -130,31 +148,37 @@ function createSpinningWheel() {
                             <feMergeNode in="SourceGraphic"/>
                         </feMerge>
                     </filter>
+                    ${clipDefs}
                 </defs>
-                <g filter="url(#wheelShadow)">
+                <g id="fortuneWheelGroup" filter="url(#wheelShadow)">
     `;
 
-    // Draw sectors
+    // Draw sectors + svg labels clipped to sectors
     for (let i = 0; i < numSectors; i++) {
         const startAngle = i * anglePerSector - 90; // Start from top
         const endAngle = (i + 1) * anglePerSector - 90;
-
         const startRad = (startAngle * Math.PI) / 180;
         const endRad = (endAngle * Math.PI) / 180;
-
         const x1 = centerX + radius * Math.cos(startRad);
         const y1 = centerY + radius * Math.sin(startRad);
         const x2 = centerX + radius * Math.cos(endRad);
         const y2 = centerY + radius * Math.sin(endRad);
-
         const largeArc = anglePerSector > 180 ? 1 : 0;
-
         const pathData = `M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
 
-        svgHTML += `<path d="${pathData}" fill="${WHEEL_COLORS[i]}" stroke="#ffffff" stroke-width="2"/>`;
-    }
+        svgHTML += `<g class="sector" data-index="${i}">`;
+        svgHTML += `<path d="${pathData}" fill="${WHEEL_COLORS[i]}" stroke="#ffffff" stroke-width="2" data-index="${i}"/>`;
 
-    svgHTML += `</g>`;
+        const angleMid = (startAngle + endAngle) / 2;
+        const textRadius = radius * 0.62;
+        const tx = centerX + textRadius * Math.cos((angleMid * Math.PI) / 180);
+        const ty = centerY + textRadius * Math.sin((angleMid * Math.PI) / 180);
+        const textLen = Math.max(40, Math.round(textRadius * angleRad * 0.85));
+        const textRotation = angleMid + 90;
+
+        svgHTML += `<text class="label-text" data-index="${i}" x="${tx}" y="${ty}" fill="#fff" font-size="${fontSize}" font-weight="700" text-anchor="middle" dominant-baseline="middle" transform="rotate(${textRotation}, ${tx}, ${ty})" clip-path="url(#wheelClip-${i})" lengthAdjust="spacingAndGlyphs" textLength="${textLen}">${ALL_ARCHETYPES[i]}</text>`;
+        svgHTML += `</g>`;
+    }
 
     // Add center circle
     svgHTML += `
@@ -162,31 +186,7 @@ function createSpinningWheel() {
         <circle cx="${centerX}" cy="${centerY}" r="15" fill="#4ecdc4" stroke="#ffffff" stroke-width="2"/>
     `;
 
-    svgHTML += `</svg>`;
-
-    // Add text labels
-    svgHTML += `<div class="wheel-labels">`;
-    for (let i = 0; i < numSectors; i++) {
-        const angle = i * anglePerSector + anglePerSector / 2 - 90;
-        const rad = (angle * Math.PI) / 180;
-        const textRadius = radius * 0.75;
-        const x = centerX + textRadius * Math.cos(rad);
-        const y = centerY + textRadius * Math.sin(rad);
-
-        // Calculate rotation for text (perpendicular to radius)
-        const textRotation = angle + 90;
-
-        svgHTML += `
-            <div class="wheel-label" style="
-                left: ${x}px;
-                top: ${y}px;
-                transform: translate(-50%, -50%) rotate(${textRotation}deg);
-            ">
-                ${ALL_ARCHETYPES[i]}
-            </div>
-        `;
-    }
-    svgHTML += `</div></div>`;
+    svgHTML += `</g></svg></div>`;
 
     container.innerHTML = svgHTML;
 }
