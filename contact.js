@@ -124,6 +124,25 @@ function submitContactForm() {
     const localResults = calculateTestResults(testData);
     console.log('Local results:', localResults);
 
+    // Save to Google Sheets immediately (independent from AI)
+    // Это фиксирует лид-просадку: запись формы не зависит от ответа модели
+    const sheetsData = {
+        ...formData,
+        ...testData,
+        profileType: localResults.profileType,
+        readinessScore: localResults.readinessScore,
+        timestamp: new Date().toISOString()
+    };
+
+    fetch('/api/save-to-sheets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sheetsData)
+    })
+    .then(r => r.json().catch(() => ({})))
+    .then(result => console.log('Saved to Google Sheets (pre-AI):', result))
+    .catch(err => console.error('Error saving to Google Sheets (pre-AI):', err));
+
     // Real API call to generate AI-powered results
     fetch('/api/generate-results', {
         method: 'POST',
@@ -171,31 +190,6 @@ function submitContactForm() {
             personalizedMessage: aiMessage,
             archetype: archetype  // Add archetype for spinning wheel
         }));
-
-        // Save to Google Sheets (как было раньше — после получения ответа ИИ)
-        const sheetsData = {
-            ...formData,
-            ...testData,
-            profileType: localResults.profileType,
-            readinessScore: localResults.readinessScore,
-            timestamp: new Date().toISOString()
-        };
-
-        fetch('/api/save-to-sheets', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(sheetsData)
-        })
-        .then(response => response.json())
-        .then(result => {
-            console.log('Saved to Google Sheets:', result);
-        })
-        .catch(error => {
-            console.error('Error saving to Google Sheets:', error);
-            // Не блокируем переход, если сохранение в таблицу не удалось
-        });
 
         // Hide loading overlay before navigation
         hideLoadingOverlay();
