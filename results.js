@@ -54,7 +54,20 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    // Spinning wheel removed - now only appears in loading overlay during AI processing
+    // Создаём колесо фортуны и запускаем вращение с последующей остановкой на архетипе
+    createSpinningWheel();
+
+    // Получаем название архетипа из ответа ИИ (парсится в contact.js)
+    const archetypeName = results.archetype || results.profileName || ARCHETYPE_MAPPING[results.profileType] || 'Оптимизатор';
+
+    // Стартуем быстрое вращение и размытие подписей, затем плавно останавливаемся на выбранном архетипе
+    startSpinning();
+    setTimeout(() => {
+        stopOnArchetype(archetypeName);
+        // Снимаем эффект размытия после остановки
+        const wc = document.querySelector('.wheel-container');
+        if (wc) wc.classList.remove('spinning');
+    }, 1000);
 
     // Update score display
     const scoreElement = document.getElementById('scoreNumber');
@@ -62,10 +75,7 @@ document.addEventListener('DOMContentLoaded', function() {
         scoreElement.textContent = results.readinessScore;
     }
 
-    // Get archetype name from AI response (parsed in contact.js)
-    const archetypeName = results.archetype || results.profileName || ARCHETYPE_MAPPING[results.profileType] || 'Оптимизатор';
-
-    // Update profile display with archetype from AI
+    // Обновляем отображение архетипа из ответа ИИ
     const profileElement = document.getElementById('profile-type');
     if (profileElement) {
         profileElement.textContent = archetypeName;
@@ -91,12 +101,10 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Доминантный архетип:', results.profileType);
     }
 
-    // Animate speedometer
-    if (typeof results.readinessScore === 'number') {
+    // Спидометр отключён: запускаем анимацию только если элементы есть в DOM
+    if (typeof results.readinessScore === 'number' && document.getElementById('needle')) {
         animateSpeedometer(results.readinessScore);
     }
-
-    // Wheel animation removed - archetype is now determined and displayed directly from AI response
 });
 
 /**
@@ -116,7 +124,7 @@ function createSpinningWheel() {
 
     // Create SVG
     let svgHTML = `
-        <div class="wheel-container">
+        <div class="wheel-container spinning">
             <div class="wheel-pointer"></div>
             <svg id="fortuneWheel" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="spinning-wheel">
                 <defs>
@@ -202,6 +210,9 @@ function startSpinning() {
     const wheel = document.getElementById('fortuneWheel');
     if (!wheel) return;
 
+    const wc = document.querySelector('.wheel-container');
+    if (wc) wc.classList.add('spinning');
+
     // Fast continuous rotation
     spinInterval = setInterval(() => {
         wheelRotation += 5; // 5 degrees per frame
@@ -260,7 +271,9 @@ function stopOnArchetype(archetypeName) {
     // Optional: highlight the winning sector after animation completes
     setTimeout(() => {
         console.log('Wheel stopped on:', archetypeName);
-        // You can add visual feedback here
+        // После остановки убираем размытие подписей
+        const wc = document.querySelector('.wheel-container');
+        if (wc) wc.classList.remove('spinning');
     }, 4000);
 }
 
@@ -590,6 +603,7 @@ function getGiftDescription(clientType) {
 function animateSpeedometer(targetScore) {
     const needle = document.getElementById('needle');
     const scoreNumber = document.getElementById('scoreNumber');
+    if (!needle || !scoreNumber) return; // guard when speedometer is commented out
     
     let currentScore = 0;
     const animationDuration = 2000; // 2 seconds
@@ -624,6 +638,16 @@ function animateSpeedometer(targetScore) {
         }
     }, stepDuration);
 }
+
+// Inject minimal CSS tweaks for blur effect while spinning
+(function injectWheelStyles(){
+    const style = document.createElement('style');
+    style.textContent = `
+    .wheel-container.spinning .wheel-label { filter: blur(3px); opacity: 0.65; transition: filter .2s linear, opacity .2s linear; }
+    .wheel-container:not(.spinning) .wheel-label { filter: none; opacity: 1; }
+    `;
+    document.head.appendChild(style);
+})();
 
 function downloadGift() {
     const results = JSON.parse(localStorage.getItem('testResults') || '{}');

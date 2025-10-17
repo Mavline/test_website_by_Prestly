@@ -1,10 +1,25 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/index.html" },
-    { "source": "/test", "destination": "/test.html" },
-    { "source": "/contact", "destination": "/contact.html" },
-    { "source": "/results", "destination": "/results.html" },
-    { "source": "/clear-data", "destination": "/clear-data.html" }
+    {
+      "source": "/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/test",
+      "destination": "/test.html"
+    },
+    {
+      "source": "/contact",
+      "destination": "/contact.html"
+    },
+    {
+      "source": "/results",
+      "destination": "/results.html"
+    },
+    {
+      "source": "/clear-data",
+      "destination": "/clear-data.html"
+    }
   ],
   "headers": [
     {
@@ -24,5 +39,6 @@
         }
       ]
     }
-  ]
+  ],
+  "version": 2
 }
