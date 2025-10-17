@@ -2,8 +2,5 @@
   "name": "expertai-academy",
   "version": "1.0.0",
   "type": "module",
-  "description": "AI Readiness Assessment Platform",
-  "engines": {
-    "node": "22.x"
-  }
+  "description": "AI Readiness Assessment Platform"
 }
