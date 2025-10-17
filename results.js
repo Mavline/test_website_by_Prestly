@@ -59,15 +59,43 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Получаем название архетипа из ответа ИИ (парсится в contact.js)
     const archetypeName = results.archetype || results.profileName || ARCHETYPE_MAPPING[results.profileType] || 'Оптимизатор';
-    const fullText = (results.personalizedMessage || results.aiGeneratedStrategy || results.message || '').trim();
+    let fullText = (results.personalizedMessage || results.aiGeneratedStrategy || results.message || '').trim();
 
     // Стартуем быстрое вращение и размытие подписей, затем плавно останавливаемся на выбранном архетипе
     startSpinning();
     setTimeout(() => {
         // Плавно останавливаем колесо на выбранном архетипе
-        stopOnArchetype(archetypeName, () => {
+        stopOnArchetype(archetypeName, async () => {
             const profileElement = document.getElementById('profile-type');
             if (profileElement) profileElement.textContent = archetypeName;
+
+            // Если текста нет, пробуем дожать генерацию здесь (ретрай)
+            if (!fullText) {
+                try {
+                    const pending = JSON.parse(localStorage.getItem('pendingAIRequest') || 'null');
+                    if (pending && pending.testData) {
+                        const resp = await fetch('/api/generate-results', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(pending)
+                        });
+                        if (resp.ok) {
+                            const data = await resp.json();
+                            fullText = (data.message || data.aiGeneratedStrategy || '').trim();
+                            // Обновляем сохранённые результаты
+                            const saved = JSON.parse(localStorage.getItem('testResults') || '{}');
+                            saved.personalizedMessage = fullText;
+                            saved.aiGeneratedStrategy = fullText;
+                            localStorage.setItem('testResults', JSON.stringify(saved));
+                            // Убираем метку ретрая
+                            localStorage.removeItem('pendingAIRequest');
+                        }
+                    }
+                } catch (e) {
+                    console.error('Retry generate-results on results page failed:', e);
+                }
+            }
+
             setTimeout(() => revealDescription(fullText), 1000);
         });
     }, 1000);
@@ -150,7 +178,7 @@ function createSpinningWheel() {
                     </filter>
                     ${clipDefs}
                 </defs>
-                <g id="fortuneWheelGroup" filter="url(#wheelShadow)">
+                <g id="fortuneWheelGroup" filter="url(#wheelShadow)" style="transform-box: fill-box; transform-origin: 50% 50%;">
     `;
 
     // Draw sectors + svg labels clipped to sectors

@@ -143,17 +143,22 @@ function submitContactForm() {
     .then(result => console.log('Saved to Google Sheets (pre-AI):', result))
     .catch(err => console.error('Error saving to Google Sheets (pre-AI):', err));
 
+    // Prepare payload and store for potential retry on results page
+    const aiPayload = {
+        testData: testData,
+        profileType: localResults.profileType,
+        readinessScore: localResults.readinessScore
+    };
+    localStorage.setItem('pendingAIRequest', JSON.stringify(aiPayload));
+
     // Real API call to generate AI-powered results
     fetch('/api/generate-results', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-            testData: testData,
-            profileType: localResults.profileType,
-            readinessScore: localResults.readinessScore
-        })
+        body: JSON.stringify(aiPayload),
+        keepalive: true
     })
     .then(async response => {
         if (!response.ok) {
@@ -165,6 +170,8 @@ function submitContactForm() {
     })
     .then(data => {
         console.log('AI Generated Results:', data);
+        // Clear pending marker on success
+        localStorage.removeItem('pendingAIRequest');
 
         // Parse archetype from AI response
         let archetype = null;
