@@ -63,10 +63,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Стартуем быстрое вращение и размытие подписей, затем плавно останавливаемся на выбранном архетипе
     startSpinning();
     setTimeout(() => {
+        // Плавно останавливаем колесо на выбранном архетипе;
+        // эффект размытия снимется внутри stopOnArchetype по завершении анимации
         stopOnArchetype(archetypeName);
-        // Снимаем эффект размытия после остановки
-        const wc = document.querySelector('.wheel-container');
-        if (wc) wc.classList.remove('spinning');
     }, 1000);
 
     // Update score display
@@ -83,10 +82,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Update personalized diagnostic message
     const messageElement = document.getElementById('personalized-message');
-    if (messageElement && results.personalizedMessage) {
-        // Разбиваем сообщение на параграфы для лучшего отображения
-        const paragraphs = results.personalizedMessage.split('\n\n');
-        messageElement.innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
+    if (messageElement) {
+        const fullText = (results.personalizedMessage || results.aiGeneratedStrategy || results.message || '').trim();
+        if (fullText) {
+            const paragraphs = fullText.split(/\n{2,}/);
+            messageElement.innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
+        }
     }
 
     // Generate full personal strategy consultation
@@ -643,8 +644,10 @@ function animateSpeedometer(targetScore) {
 (function injectWheelStyles(){
     const style = document.createElement('style');
     style.textContent = `
+    .wheel-container { overflow: hidden; }
     .wheel-container.spinning .wheel-label { filter: blur(3px); opacity: 0.65; transition: filter .2s linear, opacity .2s linear; }
     .wheel-container:not(.spinning) .wheel-label { filter: none; opacity: 1; }
+    .wheel-label { max-width: 90px; overflow: hidden; text-overflow: ellipsis; }
     `;
     document.head.appendChild(style);
 })();

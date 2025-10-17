@@ -928,3 +928,86 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// --- Override waiting wheel to keep pointer static and rotate only sectors ---
+// This redefines createLoadingSpinningWheel to avoid rotating the pointer, and
+// adds slight blur while spinning so надписи визуально «сливаются».
+function createLoadingSpinningWheel() {
+    const archetypes = [
+        'Оптимизатор', 'Визионер', 'Прагматик', 'Предприниматель', 'Энтузиаст',
+        'Скептик', 'Наблюдатель', 'Универсал', 'Аналитик', 'Искатель'
+    ];
+
+    const colors = [
+        '#ff6b6b', '#4ecdc4', '#45b7d1', '#a8dadc', '#f1c40f',
+        '#e74c3c', '#3498db', '#9b59b6', '#2ecc71', '#e67e22'
+    ];
+
+    const container = document.getElementById('loadingWheel');
+    if (!container) return;
+
+    const size = 280;
+    const centerX = size / 2;
+    const centerY = size / 2;
+    const radius = size / 2 - 10;
+    const segmentAngle = 360 / archetypes.length;
+
+    let svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" id="loadingWheelSVG" style="filter: drop-shadow(0 4px 20px rgba(0,0,0,0.5));">
+        <g id="loadingWheelGroup" style="transform-box: fill-box; transform-origin: 50% 50%;">
+    `;
+
+    archetypes.forEach((archetype, i) => {
+        const startAngle = i * segmentAngle - 90;
+        const endAngle = (i + 1) * segmentAngle - 90;
+
+        const x1 = centerX + radius * Math.cos(startAngle * Math.PI / 180);
+        const y1 = centerY + radius * Math.sin(startAngle * Math.PI / 180);
+        const x2 = centerX + radius * Math.cos(endAngle * Math.PI / 180);
+        const y2 = centerY + radius * Math.sin(endAngle * Math.PI / 180);
+
+        svg += `<path d="M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} Z"
+                fill="${colors[i]}" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>`;
+
+        const textAngle = startAngle + segmentAngle / 2;
+        const textRadius = radius * 0.65;
+        const textX = centerX + textRadius * Math.cos(textAngle * Math.PI / 180);
+        const textY = centerY + textRadius * Math.sin(textAngle * Math.PI / 180);
+
+        svg += `<text class="wheel-text" x="${textX}" y="${textY}"
+                fill="white" font-size="13" font-weight="600"
+                text-anchor="middle" dominant-baseline="middle"
+                transform="rotate(${textAngle + 90}, ${textX}, ${textY})"
+                style="text-shadow: 1px 1px 3px rgba(0,0,0,0.8); pointer-events: none;">${archetype}</text>`;
+    });
+
+    // центр (внутри вращающейся группы)
+    svg += `<circle cx="${centerX}" cy="${centerY}" r="25" fill="rgba(255,255,255,0.9)" stroke="rgba(0,0,0,0.3)" stroke-width="2"/>
+            <circle cx="${centerX}" cy="${centerY}" r="15" fill="rgba(255,107,107,0.8)"/>
+        </g>`;
+
+    // Неподвижная стрелка
+    const arrowSize = 25;
+    const arrowY = 5;
+    svg += `<path d="M ${centerX} ${arrowY} L ${centerX - arrowSize/2} ${arrowY + arrowSize} L ${centerX + arrowSize/2} ${arrowY + arrowSize} Z"
+            fill="#ff3333" stroke="rgba(255,255,255,0.9)" stroke-width="2"
+            style="filter: drop-shadow(0 2px 8px rgba(255,51,51,0.6));"/>
+            <circle cx="${centerX}" cy="${arrowY + arrowSize + 5}" r="8" fill="rgba(255,51,51,0.9)" stroke="white" stroke-width="2"/>
+        </svg>`;
+
+    container.innerHTML = svg;
+
+    // Незаметность подписей во время вращения
+    const blurStyle = document.createElement('style');
+    blurStyle.textContent = `#loadingWheel .wheel-text { filter: blur(2px); opacity: .7; }`;
+    document.head.appendChild(blurStyle);
+
+    // Крутим только группу
+    let rotation = 0;
+    const group = document.getElementById('loadingWheelGroup');
+    const spinInterval = setInterval(() => {
+        rotation = (rotation + 5) % 360;
+        group.style.transform = `rotate(${rotation}deg)`;
+    }, 16);
+
+    window.loadingWheelInterval = spinInterval;
+}
