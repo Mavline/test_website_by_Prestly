@@ -1,11 +1,60 @@
+// Archetype mapping - maps internal profile types to display names
+const ARCHETYPE_MAPPING = {
+    'strategist': 'Визионер',
+    'optimizer': 'Оптимизатор',
+    'pioneer': 'Предприниматель',
+    'analyst': 'Аналитик',
+    'pragmatist': 'Прагматик',
+    'enthusiast': 'Энтузиаст',
+    'skeptic': 'Скептик',
+    'observer': 'Наблюдатель',
+    'generalist': 'Универсал',
+    'seeker': 'Искатель'
+};
+
+// All 10 archetypes for the wheel
+const ALL_ARCHETYPES = [
+    'Оптимизатор',
+    'Визионер',
+    'Прагматик',
+    'Предприниматель',
+    'Энтузиаст',
+    'Скептик',
+    'Наблюдатель',
+    'Универсал',
+    'Аналитик',
+    'Искатель'
+];
+
+// Wheel colors - gradient colors for each sector
+const WHEEL_COLORS = [
+    '#ff6b6b',
+    '#4ecdc4',
+    '#45b7d1',
+    '#a8dadc',
+    '#f1c40f',
+    '#e74c3c',
+    '#3498db',
+    '#9b59b6',
+    '#2ecc71',
+    '#e67e22'
+];
+
+// Global wheel state
+let wheelRotation = 0;
+let isSpinning = false;
+let spinInterval = null;
+
 // Results page functionality
 document.addEventListener('DOMContentLoaded', function() {
     const results = JSON.parse(localStorage.getItem('testResults') || '{}');
-    
+
     if (!results.readinessScore) {
         document.body.innerHTML = '<div style="text-align: center; padding: 50px; color: white;">Результаты теста не найдены. <a href="index.html" style="color: #4ecdc4;">Вернуться на главную</a></div>';
         return;
     }
+
+    // Spinning wheel removed - now only appears in loading overlay during AI processing
 
     // Update score display
     const scoreElement = document.getElementById('scoreNumber');
@@ -13,10 +62,13 @@ document.addEventListener('DOMContentLoaded', function() {
         scoreElement.textContent = results.readinessScore;
     }
 
-    // Update profile display with new archetype names
+    // Get archetype name from AI response (parsed in contact.js)
+    const archetypeName = results.archetype || results.profileName || ARCHETYPE_MAPPING[results.profileType] || 'Оптимизатор';
+
+    // Update profile display with archetype from AI
     const profileElement = document.getElementById('profile-type');
     if (profileElement) {
-        profileElement.textContent = results.profileName || 'Системный Оптимизатор';
+        profileElement.textContent = archetypeName;
     }
 
     // Update personalized diagnostic message
@@ -43,7 +95,174 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof results.readinessScore === 'number') {
         animateSpeedometer(results.readinessScore);
     }
+
+    // Wheel animation removed - archetype is now determined and displayed directly from AI response
 });
+
+/**
+ * Creates the spinning wheel SVG and inserts it into the DOM
+ */
+function createSpinningWheel() {
+    const container = document.getElementById('spinningWheel');
+    if (!container) return;
+
+    const isMobile = window.innerWidth <= 768;
+    const size = isMobile ? 250 : 300;
+    const centerX = size / 2;
+    const centerY = size / 2;
+    const radius = size / 2 - 10;
+    const numSectors = ALL_ARCHETYPES.length;
+    const anglePerSector = 360 / numSectors;
+
+    // Create SVG
+    let svgHTML = `
+        <div class="wheel-container">
+            <div class="wheel-pointer"></div>
+            <svg id="fortuneWheel" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="spinning-wheel">
+                <defs>
+                    <filter id="wheelShadow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+                        <feOffset dx="0" dy="2" result="offsetblur"/>
+                        <feComponentTransfer>
+                            <feFuncA type="linear" slope="0.5"/>
+                        </feComponentTransfer>
+                        <feMerge>
+                            <feMergeNode/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+                <g filter="url(#wheelShadow)">
+    `;
+
+    // Draw sectors
+    for (let i = 0; i < numSectors; i++) {
+        const startAngle = i * anglePerSector - 90; // Start from top
+        const endAngle = (i + 1) * anglePerSector - 90;
+
+        const startRad = (startAngle * Math.PI) / 180;
+        const endRad = (endAngle * Math.PI) / 180;
+
+        const x1 = centerX + radius * Math.cos(startRad);
+        const y1 = centerY + radius * Math.sin(startRad);
+        const x2 = centerX + radius * Math.cos(endRad);
+        const y2 = centerY + radius * Math.sin(endRad);
+
+        const largeArc = anglePerSector > 180 ? 1 : 0;
+
+        const pathData = `M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+
+        svgHTML += `<path d="${pathData}" fill="${WHEEL_COLORS[i]}" stroke="#ffffff" stroke-width="2"/>`;
+    }
+
+    svgHTML += `</g>`;
+
+    // Add center circle
+    svgHTML += `
+        <circle cx="${centerX}" cy="${centerY}" r="25" fill="#1a1a2e" stroke="#ffffff" stroke-width="3"/>
+        <circle cx="${centerX}" cy="${centerY}" r="15" fill="#4ecdc4" stroke="#ffffff" stroke-width="2"/>
+    `;
+
+    svgHTML += `</svg>`;
+
+    // Add text labels
+    svgHTML += `<div class="wheel-labels">`;
+    for (let i = 0; i < numSectors; i++) {
+        const angle = i * anglePerSector + anglePerSector / 2 - 90;
+        const rad = (angle * Math.PI) / 180;
+        const textRadius = radius * 0.75;
+        const x = centerX + textRadius * Math.cos(rad);
+        const y = centerY + textRadius * Math.sin(rad);
+
+        // Calculate rotation for text (perpendicular to radius)
+        const textRotation = angle + 90;
+
+        svgHTML += `
+            <div class="wheel-label" style="
+                left: ${x}px;
+                top: ${y}px;
+                transform: translate(-50%, -50%) rotate(${textRotation}deg);
+            ">
+                ${ALL_ARCHETYPES[i]}
+            </div>
+        `;
+    }
+    svgHTML += `</div></div>`;
+
+    container.innerHTML = svgHTML;
+}
+
+/**
+ * Starts the wheel spinning continuously
+ */
+function startSpinning() {
+    if (isSpinning) return;
+
+    isSpinning = true;
+    const wheel = document.getElementById('fortuneWheel');
+    if (!wheel) return;
+
+    // Fast continuous rotation
+    spinInterval = setInterval(() => {
+        wheelRotation += 5; // 5 degrees per frame
+        wheel.style.transform = `rotate(${wheelRotation}deg)`;
+    }, 16); // ~60fps
+}
+
+/**
+ * Stops the wheel on a specific archetype with smooth deceleration
+ * @param {string} archetypeName - Name of the archetype to land on
+ */
+function stopOnArchetype(archetypeName) {
+    if (!isSpinning) return;
+
+    const wheel = document.getElementById('fortuneWheel');
+    if (!wheel) return;
+
+    // Stop the fast spinning
+    clearInterval(spinInterval);
+    isSpinning = false;
+
+    // Find the index of the target archetype
+    const targetIndex = ALL_ARCHETYPES.indexOf(archetypeName);
+    if (targetIndex === -1) {
+        console.error('Archetype not found:', archetypeName);
+        return;
+    }
+
+    // Calculate target angle
+    const numSectors = ALL_ARCHETYPES.length;
+    const anglePerSector = 360 / numSectors;
+
+    // The pointer is at the top (12 o'clock position)
+    // We want the target sector to be under the pointer
+    // Add extra spins for dramatic effect (3-5 full rotations)
+    const extraSpins = 3 + Math.floor(Math.random() * 3);
+    const targetAngle = targetIndex * anglePerSector + anglePerSector / 2;
+
+    // Calculate final rotation (normalize current rotation and add target)
+    const normalizedCurrent = wheelRotation % 360;
+    let targetRotation = extraSpins * 360 + (360 - targetAngle);
+
+    // Adjust to ensure we rotate forward
+    if (targetRotation - normalizedCurrent < 360) {
+        targetRotation += 360;
+    }
+
+    const finalRotation = wheelRotation + (targetRotation - normalizedCurrent);
+
+    // Smooth deceleration animation
+    wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+    wheel.style.transform = `rotate(${finalRotation}deg)`;
+
+    wheelRotation = finalRotation;
+
+    // Optional: highlight the winning sector after animation completes
+    setTimeout(() => {
+        console.log('Wheel stopped on:', archetypeName);
+        // You can add visual feedback here
+    }, 4000);
+}
 
 function displayResults(results, userData) {
     // Display score interpretation
@@ -332,7 +551,27 @@ function generatePersonalStrategy(results) {
             `;
             
         default:
-            return '<p>Персональная стратегия развития будет сгенерирована на основе ваших результатов.</p>';
+            return `
+                <h2>Ваш персональный план развития</h2>
+
+                <div class="strategy-intro">
+                    <p>Ваш результат <strong>${score} из 100</strong> показывает ваш текущий уровень готовности к работе с AI-технологиями.</p>
+                    <p>На основе ваших ответов мы подготовили рекомендации, которые помогут вам эффективно развиваться в этом направлении.</p>
+                </div>
+
+                <div class="strategy-step">
+                    <div class="step-header">
+                        <span class="step-badge">Рекомендация</span>
+                        <h3>Начните с основ</h3>
+                    </div>
+
+                    <p>Изучите базовые AI-инструменты, которые могут помочь в вашей повседневной работе. Это позволит вам понять возможности технологии и найти наиболее подходящие решения для ваших задач.</p>
+
+                    <div class="step-goal">
+                        <strong>Цель:</strong> Получить практический опыт работы с AI и понять, как эти инструменты могут улучшить вашу продуктивность.
+                    </div>
+                </div>
+            `;
     }
 }
 
@@ -557,7 +796,8 @@ style.textContent = `
         position: relative;
         width: 200px;
         height: 100px;
-        margin-bottom: 20px;
+        margin-bottom: 35px;
+        padding-bottom: 5px;
     }
     
     .speedometer-arc {
@@ -604,30 +844,33 @@ style.textContent = `
         width: 100%;
         height: 100%;
     }
-    
+
     .label-start {
         position: absolute;
-        bottom: 10px;
-        left: 10px;
+        bottom: -25px;
+        left: 0;
         color: #b0b0b0;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
+        font-weight: 500;
     }
-    
+
     .label-middle {
         position: absolute;
-        top: 10px;
+        top: -5px;
         left: 50%;
         transform: translateX(-50%);
         color: #b0b0b0;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
+        font-weight: 500;
     }
-    
+
     .label-end {
         position: absolute;
-        bottom: 10px;
-        right: 10px;
+        bottom: -25px;
+        right: 0;
         color: #b0b0b0;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
+        font-weight: 500;
     }
     
     .score-display {
@@ -685,6 +928,13 @@ style.textContent = `
         margin: 0;
         color: #4ecdc4;
         font-weight: 600;
+    }
+    
+    .profile-display .profile-subtitle {
+        font-size: 0.95rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin: 10px 0 0 0;
+        font-weight: 400;
     }
     
     .personalized-message {
@@ -1006,39 +1256,131 @@ style.textContent = `
         .results-header h1 {
             font-size: 2rem;
         }
-        
+
         .results-grid {
             gap: 30px;
         }
-        
+
         .speedometer-section,
         .recommendations-section,
         .gift-section {
             padding: 30px 20px;
         }
-        
+
         .speedometer {
             width: 150px;
             height: 75px;
+            margin-bottom: 30px;
         }
-        
+
         .speedometer-arc {
             width: 150px;
             height: 75px;
         }
-        
+
         .speedometer-needle {
             height: 60px;
         }
-        
+
+        .label-start {
+            bottom: -20px;
+            font-size: 0.75rem;
+        }
+
+        .label-middle {
+            top: -8px;
+            font-size: 0.75rem;
+        }
+
+        .label-end {
+            bottom: -20px;
+            font-size: 0.75rem;
+        }
+
         .score-number {
             font-size: 2.5rem;
         }
-        
+
         .social-links {
             flex-direction: column;
             align-items: center;
         }
+
+        .wheel-container {
+            transform: scale(0.9);
+        }
+
+        .wheel-label {
+            font-size: 0.7rem !important;
+        }
+    }
+
+    /* Spinning Wheel Styles */
+    .wheel-container {
+        position: relative;
+        display: inline-block;
+        margin: 20px auto;
+    }
+
+    .spinning-wheel {
+        display: block;
+        transition: none;
+        will-change: transform;
+    }
+
+    .wheel-pointer {
+        position: absolute;
+        top: -15px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 15px solid transparent;
+        border-right: 15px solid transparent;
+        border-top: 30px solid #ff6b6b;
+        z-index: 100;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    }
+
+    .wheel-pointer::after {
+        content: '';
+        position: absolute;
+        top: -30px;
+        left: -15px;
+        width: 30px;
+        height: 30px;
+        background: #ff6b6b;
+        border-radius: 50%;
+        border: 3px solid #ffffff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .wheel-labels {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+    .wheel-label {
+        position: absolute;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+        white-space: nowrap;
+        text-align: center;
+        pointer-events: none;
+        user-select: none;
+    }
+
+    #spinningWheel {
+        min-height: 350px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 `;
 document.head.appendChild(style);

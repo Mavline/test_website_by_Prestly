@@ -117,6 +117,9 @@ function submitContactForm() {
     submitButton.textContent = 'Генерируем результаты...';
     submitButton.disabled = true;
 
+    // Show full-screen loading overlay
+    showLoadingOverlay();
+
     // Calculate initial profile locally
     const localResults = calculateTestResults(testData);
     console.log('Local results:', localResults);
@@ -144,13 +147,29 @@ function submitContactForm() {
     .then(data => {
         console.log('AI Generated Results:', data);
 
+        // Parse archetype from AI response
+        let archetype = null;
+        const aiMessage = data.message || data.aiGeneratedStrategy || '';
+
+        // Extract archetype from "АРХЕТИП: [название]" format
+        const archetypeMatch = aiMessage.match(/АРХЕТИП:\s*([А-Яа-яЁё\-]+)/i);
+        if (archetypeMatch) {
+            archetype = archetypeMatch[1].trim();
+            console.log('Extracted archetype:', archetype);
+        } else {
+            // Fallback to local profile if archetype not found
+            archetype = localResults.profileName || 'Оптимизатор';
+            console.log('Using fallback archetype:', archetype);
+        }
+
         // Save AI-generated results along with local calculation
         localStorage.setItem('testResults', JSON.stringify({
             profile: localResults.profileName,
             readinessScore: localResults.readinessScore,
-            aiGeneratedStrategy: data.message || data.aiGeneratedStrategy,
+            aiGeneratedStrategy: aiMessage,
             profileType: localResults.profileType,
-            personalizedMessage: data.message || localResults.personalizedMessage
+            personalizedMessage: aiMessage,
+            archetype: archetype  // Add archetype for spinning wheel
         }));
 
         // Save to Google Sheets
@@ -178,10 +197,14 @@ function submitContactForm() {
             // Don't block navigation if sheets save fails
         });
 
+        // Hide loading overlay before navigation
+        hideLoadingOverlay();
         window.location.href = 'results.html';
     })
     .catch(error => {
         console.error('Error:', error);
+        // Hide loading overlay on error
+        hideLoadingOverlay();
         submitButton.textContent = originalText;
         submitButton.disabled = false;
 
@@ -189,6 +212,134 @@ function submitContactForm() {
         const errorMsg = `Произошла ошибка при генерации результатов: ${error.message}\n\nПожалуйста, попробуйте еще раз.`;
         alert(errorMsg);
     });
+}
+
+function showLoadingOverlay() {
+    // Create overlay element
+    const overlay = document.createElement('div');
+    overlay.id = 'loadingOverlay';
+    overlay.innerHTML = `
+        <div class="loading-content">
+            <div id="loadingWheel"></div>
+            <div class="loading-message">
+                Искусственный интеллект определяет ваш архетип.
+                Анализ может занять 1-2 минуты.
+                Спасибо за ожидание!
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    // Create spinning wheel in the loading overlay
+    createLoadingSpinningWheel();
+
+    // Prevent scrolling when overlay is active
+    document.body.style.overflow = 'hidden';
+}
+
+function createLoadingSpinningWheel() {
+    const archetypes = [
+        'Оптимизатор',
+        'Визионер',
+        'Прагматик',
+        'Предприниматель',
+        'Энтузиаст',
+        'Скептик',
+        'Наблюдатель',
+        'Универсал',
+        'Аналитик',
+        'Искатель'
+    ];
+
+    const colors = [
+        '#ff6b6b', '#4ecdc4', '#45b7d1', '#a8dadc', '#f1c40f',
+        '#e74c3c', '#3498db', '#9b59b6', '#2ecc71', '#e67e22'
+    ];
+
+    const container = document.getElementById('loadingWheel');
+    if (!container) return;
+
+    const size = 280;
+    const centerX = size / 2;
+    const centerY = size / 2;
+    const radius = size / 2 - 10;
+    const segmentAngle = 360 / archetypes.length;
+
+    let svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" id="wheelSVG" style="filter: drop-shadow(0 4px 20px rgba(0,0,0,0.5));">`;
+
+    archetypes.forEach((archetype, i) => {
+        const startAngle = i * segmentAngle - 90;
+        const endAngle = (i + 1) * segmentAngle - 90;
+
+        const x1 = centerX + radius * Math.cos(startAngle * Math.PI / 180);
+        const y1 = centerY + radius * Math.sin(startAngle * Math.PI / 180);
+        const x2 = centerX + radius * Math.cos(endAngle * Math.PI / 180);
+        const y2 = centerY + radius * Math.sin(endAngle * Math.PI / 180);
+
+        svg += `<path d="M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} Z"
+                fill="${colors[i]}"
+                stroke="rgba(255,255,255,0.3)"
+                stroke-width="2"/>`;
+
+        const textAngle = startAngle + segmentAngle / 2;
+        const textRadius = radius * 0.65;
+        const textX = centerX + textRadius * Math.cos(textAngle * Math.PI / 180);
+        const textY = centerY + textRadius * Math.sin(textAngle * Math.PI / 180);
+
+        svg += `<text x="${textX}" y="${textY}"
+                fill="white"
+                font-size="13"
+                font-weight="600"
+                text-anchor="middle"
+                dominant-baseline="middle"
+                transform="rotate(${textAngle + 90}, ${textX}, ${textY})"
+                style="text-shadow: 1px 1px 3px rgba(0,0,0,0.8); pointer-events: none;">${archetype}</text>`;
+    });
+
+    svg += `<circle cx="${centerX}" cy="${centerY}" r="25" fill="rgba(255,255,255,0.9)" stroke="rgba(0,0,0,0.3)" stroke-width="2"/>`;
+    svg += `<circle cx="${centerX}" cy="${centerY}" r="15" fill="rgba(255,107,107,0.8)"/>`;
+
+    const arrowSize = 25;
+    const arrowY = 5;
+    svg += `<path d="M ${centerX} ${arrowY} L ${centerX - arrowSize/2} ${arrowY + arrowSize} L ${centerX + arrowSize/2} ${arrowY + arrowSize} Z"
+            fill="#ff3333"
+            stroke="rgba(255,255,255,0.9)"
+            stroke-width="2"
+            style="filter: drop-shadow(0 2px 8px rgba(255,51,51,0.6));"/>`;
+    svg += `<circle cx="${centerX}" cy="${arrowY + arrowSize + 5}" r="8" fill="rgba(255,51,51,0.9)" stroke="white" stroke-width="2"/>`;
+
+    svg += '</svg>';
+
+    container.innerHTML = svg;
+
+    // Start spinning animation
+    let rotation = 0;
+    const wheel = document.getElementById('wheelSVG');
+    const spinInterval = setInterval(() => {
+        rotation += 5;
+        if (rotation >= 360) rotation = 0;
+        wheel.style.transform = `rotate(${rotation}deg)`;
+        wheel.style.transformOrigin = 'center';
+        wheel.style.transition = 'none';
+    }, 16); // 60 FPS
+
+    // Store interval ID to stop later if needed
+    window.loadingWheelInterval = spinInterval;
+}
+
+function hideLoadingOverlay() {
+    // Stop wheel spinning animation
+    if (window.loadingWheelInterval) {
+        clearInterval(window.loadingWheelInterval);
+        window.loadingWheelInterval = null;
+    }
+
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.remove();
+    }
+    // Restore scrolling
+    document.body.style.overflow = '';
 }
 
 function calculateTestResults(testData) {
@@ -210,79 +361,83 @@ function calculateTestResults(testData) {
         format: testData.q10 || ''
     };
 
+    // ПЛОСКАЯ ЧЕСТНАЯ система подсчета (макс 8 баллов на вопрос, минимум 0-1)
+    // Каждый вопрос имеет полный диапазон от "скептик/не готов" до "энтузиаст/готов"
+
     // q1: Роль (макс 8 баллов)
-    if (testData.q1 === 'A') totalScore += 4;      // Исполнитель - средняя готовность
-    else if (testData.q1 === 'B') totalScore += 6; // Координатор - выше средней
+    if (testData.q1 === 'A') totalScore += 3;      // Исполнитель - низкая готовность
+    else if (testData.q1 === 'B') totalScore += 5; // Координатор - средняя
     else if (testData.q1 === 'C') totalScore += 8; // Стратег - высокая готовность
-    else if (testData.q1 === 'D') totalScore += 5; // Универсал - средняя
+    else if (testData.q1 === 'D') totalScore += 0; // Универсал - нет фокуса, не готов
 
     // q2: Рутинные задачи (макс 8 баллов)
-    if (testData.q2 === 'A') totalScore += 7;      // Обработка инфо - хорошо для AI
-    else if (testData.q2 === 'B') totalScore += 7; // Контент - хорошо для AI
+    if (testData.q2 === 'A') totalScore += 6;      // Обработка инфо - хорошо для AI
+    else if (testData.q2 === 'B') totalScore += 5; // Контент - средне для AI
     else if (testData.q2 === 'C') totalScore += 8; // Монотонные операции - идеально для AI
-    else if (testData.q2 === 'D') totalScore += 7; // Анализ данных - хорошо для AI
+    else if (testData.q2 === 'D') totalScore += 1; // Анализ данных - сложно автоматизировать
 
     // q3: Уровень владения инструментами (макс 8 баллов)
-    if (testData.q3 === 'A') totalScore += 5;      // Уверенный пользователь
+    if (testData.q3 === 'A') totalScore += 4;      // Уверенный пользователь - средне
     else if (testData.q3 === 'B') totalScore += 7; // Энтузиаст - высокая готовность
     else if (testData.q3 === 'C') totalScore += 8; // Power User - максимальная готовность
-    else if (testData.q3 === 'D') totalScore += 2; // Новичок - низкая готовность
+    else if (testData.q3 === 'D') totalScore += 0; // Новичок - не готов
 
     // q4: Влияние AI на отрасль (макс 8 баллов)
     if (testData.q4 === 'A') totalScore += 8;      // Критическое - понимает важность
-    else if (testData.q4 === 'B') totalScore += 6; // Значительное
-    else if (testData.q4 === 'C') totalScore += 3; // Умеренное - слабое понимание
-    else if (testData.q4 === 'D') totalScore += 1; // Неясно - очень слабое понимание
+    else if (testData.q4 === 'B') totalScore += 5; // Значительное - средне
+    else if (testData.q4 === 'C') totalScore += 2; // Умеренное - слабое понимание
+    else if (testData.q4 === 'D') totalScore += 0; // Неясно - совсем не понимает
 
-    // q5: Главный барьер (макс 5 баллов - барьеры снижают готовность)
-    if (testData.q5 === 'A') totalScore += 4;      // Нехватка времени - слабый барьер
-    else if (testData.q5 === 'B') totalScore += 5; // Инфо перегруз - средний барьер
-    else if (testData.q5 === 'C') totalScore += 2; // Техническая сложность - сильный барьер
-    else if (testData.q5 === 'D') totalScore += 1; // Нет задачи - очень сильный барьер
+    // q5: Главный барьер (макс 8 баллов)
+    if (testData.q5 === 'A') totalScore += 6;      // Нехватка времени - преодолимо
+    else if (testData.q5 === 'B') totalScore += 4; // Инфо перегруз - средний барьер
+    else if (testData.q5 === 'C') totalScore += 1; // Техническая сложность - сильный барьер
+    else if (testData.q5 === 'D') totalScore += 0; // Нет задачи - фатальный барьер
 
-    // q6: Опасения (макс 6 баллов)
-    if (testData.q6 === 'A') totalScore += 3;      // Замена AI - сильное опасение
+    // q6: Опасения (макс 8 баллов)
+    if (testData.q6 === 'A') totalScore += 1;      // Замена AI - сильное опасение, не готов
     else if (testData.q6 === 'B') totalScore += 5; // Безопасность - разумное опасение
-    else if (testData.q6 === 'C') totalScore += 6; // Черный ящик - технически подкованное
-    else if (testData.q6 === 'D') totalScore += 4; // Бюджеты - преодолимое опасение
+    else if (testData.q6 === 'C') totalScore += 8; // Черный ящик - технически подкованное
+    else if (testData.q6 === 'D') totalScore += 3; // Бюджеты - финансовое опасение
 
-    // q7: Трудности в обучении (макс 7 баллов)
-    if (testData.q7 === 'A') totalScore += 5;      // Найти материалы
-    else if (testData.q7 === 'B') totalScore += 6; // Совмещать с работой
-    else if (testData.q7 === 'C') totalScore += 4; // Нет наставника
-    else if (testData.q7 === 'D') totalScore += 7; // Теория→практика (хороший признак)
+    // q7: Трудности в обучении (макс 8 баллов)
+    if (testData.q7 === 'A') totalScore += 4;      // Найти материалы - средняя сложность
+    else if (testData.q7 === 'B') totalScore += 5; // Совмещать с работой - средняя
+    else if (testData.q7 === 'C') totalScore += 1; // Нет наставника - сильная сложность
+    else if (testData.q7 === 'D') totalScore += 7; // Теория→практика - хороший признак
 
-    // q8: Гипотетические проблемы (макс 6 баллов)
-    if (testData.q8 === 'A') totalScore += 4;      // Не получу пользу
-    else if (testData.q8 === 'B') totalScore += 3; // Не оценят
-    else if (testData.q8 === 'C') totalScore += 6; // Устареет - понимает динамику
-    else if (testData.q8 === 'D') totalScore += 5; // Ошибка
+    // q8: Гипотетические проблемы (макс 8 баллов)
+    if (testData.q8 === 'A') totalScore += 0;      // Не получу пользу - скептик
+    else if (testData.q8 === 'B') totalScore += 1; // Не оценят - скептик
+    else if (testData.q8 === 'C') totalScore += 8; // Устареет - понимает динамику, прогрессивный
+    else if (testData.q8 === 'D') totalScore += 4; // Ошибка - осторожный
 
     // q9: Суперэффект (макс 8 баллов)
-    if (testData.q9 === 'A') totalScore += 7;      // Освободить время
+    if (testData.q9 === 'A') totalScore += 6;      // Освободить время - практичная цель
     else if (testData.q9 === 'B') totalScore += 8; // Генерация идей - высокая мотивация
-    else if (testData.q9 === 'C') totalScore += 7; // Персональный ассистент
-    else if (testData.q9 === 'D') totalScore += 8; // Повысить стоимость - бизнес-мышление
+    else if (testData.q9 === 'C') totalScore += 5; // Персональный ассистент - средняя цель
+    else if (testData.q9 === 'D') totalScore += 7; // Повысить стоимость - бизнес-мышление
 
     // q10: Формат обучения (макс 8 баллов)
-    if (testData.q10 === 'A') totalScore += 6;      // Короткий интенсив
+    if (testData.q10 === 'A') totalScore += 5;      // Короткий интенсив - средняя готовность
     else if (testData.q10 === 'B') totalScore += 7; // Комплексный курс - серьезный подход
     else if (testData.q10 === 'C') totalScore += 8; // Практический воркшоп - максимум вовлеченности
-    else if (testData.q10 === 'D') totalScore += 5; // Самостоятельно
+    else if (testData.q10 === 'D') totalScore += 2; // Самостоятельно - низкая готовность
 
     // q11: Что важнее в обучении (макс 8 баллов)
-    if (testData.q11 === 'A') totalScore += 7;      // Фундаментальные знания
+    if (testData.q11 === 'A') totalScore += 4;      // Фундаментальные знания - теория
     else if (testData.q11 === 'B') totalScore += 8; // Практические инструменты - готов применять
-    else if (testData.q11 === 'C') totalScore += 6; // Поддержка
-    else if (testData.q11 === 'D') totalScore += 5; // Гибкость
+    else if (testData.q11 === 'C') totalScore += 3; // Поддержка - нужна помощь
+    else if (testData.q11 === 'D') totalScore += 2; // Гибкость - низкая мотивация
 
     // q12: Направление (макс 8 баллов)
     if (testData.q12 === 'A') totalScore += 8;      // Автоматизация - конкретное применение
-    else if (testData.q12 === 'B') totalScore += 7; // Чат-боты
-    else if (testData.q12 === 'C') totalScore += 7; // Анализ данных
-    else if (testData.q12 === 'D') totalScore += 7; // Генерация контента
+    else if (testData.q12 === 'B') totalScore += 6; // Чат-боты - конкретно
+    else if (testData.q12 === 'C') totalScore += 7; // Анализ данных - технически
+    else if (testData.q12 === 'D') totalScore += 4; // Генерация контента - базово
 
     // Максимум возможных баллов = 96
+    // Минимум возможных баллов = 10 (если все худшие ответы)
     // Приводим к шкале 0-100
     const readinessScore = Math.round((totalScore / 96) * 100);
 
@@ -647,21 +802,129 @@ style.textContent = `
         .contact-header h1 {
             font-size: 2rem;
         }
-        
+
         .contact-form-wrapper {
             grid-template-columns: 1fr;
             gap: 30px;
         }
-        
+
         .contact-form {
             padding: 24px 16px;
         }
-        
+
         .contact-benefits {
             padding: 20px 16px;
         }
         .contact-content { padding: 0 16px; }
         .contact-form-wrapper { gap: 20px; }
+    }
+
+    /* Loading Overlay Styles */
+    #loadingOverlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(15, 15, 35, 0.98);
+        backdrop-filter: blur(10px);
+        z-index: 9999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .loading-content {
+        text-align: center;
+        padding: 20px;
+        max-width: 600px;
+        width: 90%;
+    }
+
+    #loadingWheel {
+        width: 280px;
+        margin: 0 auto 30px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    #loadingWheel svg {
+        max-width: 100%;
+        height: auto;
+    }
+
+    .loading-message {
+        color: #ffffff;
+        font-size: 1.3rem;
+        line-height: 1.8;
+        font-weight: 400;
+        text-align: center;
+        padding: 0 20px;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 0.9; }
+        50% { opacity: 1; }
+    }
+
+    /* Responsive Loading Overlay */
+    @media (max-width: 1200px) {
+        .loading-message {
+            font-size: 1.2rem;
+            line-height: 1.7;
+        }
+        .spinner {
+            width: 70px;
+            height: 70px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .loading-message {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            padding: 0 15px;
+        }
+        .spinner {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 25px;
+        }
+        .loading-content {
+            max-width: 500px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .loading-message {
+            font-size: 1rem;
+            line-height: 1.5;
+            padding: 0 10px;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            margin-bottom: 20px;
+            border-width: 3px;
+        }
+        .loading-content {
+            max-width: 100%;
+            padding: 15px;
+        }
+    }
+
+    @media (max-width: 360px) {
+        .loading-message {
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+        .spinner {
+            width: 45px;
+            height: 45px;
+        }
     }
 `;
 document.head.appendChild(style);
