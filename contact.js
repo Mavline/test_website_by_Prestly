@@ -91,6 +91,8 @@ function submitContactForm() {
     // Get test data from localStorage
     const rawTestData = JSON.parse(localStorage.getItem('testData') || '{}');
     const testData = normalizeTestData(rawTestData);
+    // Человекочитаемые ответы с текстами (сформированы в test.js при завершении теста)
+    const answersVerbose = JSON.parse(localStorage.getItem('answersVerbose') || '[]');
 
     // Validate testData before proceeding
     if (!testData || Object.keys(testData).length === 0) {
@@ -146,6 +148,7 @@ function submitContactForm() {
     // Prepare payload and store for potential retry on results page
     const aiPayload = {
         testData: testData,
+        answersVerbose: answersVerbose,
         profileType: localResults.profileType,
         readinessScore: localResults.readinessScore
     };

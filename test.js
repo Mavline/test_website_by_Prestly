@@ -160,7 +160,33 @@ function submitTest() {
   }
   // Очистим прежние результаты, чтобы исключить использование старого балла
   try { localStorage.removeItem('testResults'); } catch(e){}
+
+  // Сформируем подробные ответы (с текстами), чтобы передать их в модель
+  const answersVerbose = questions.map(q => {
+    if (q.type === 'radio') {
+      const letter = testData[q.id];
+      const idx = typeof letter === 'string' ? (letter.charCodeAt(0) - 65) : -1; // A=0, B=1, ...
+      const chosenText = idx >= 0 && q.options && q.options[idx] ? q.options[idx] : '';
+      return {
+        id: q.id,
+        question: q.text,
+        type: q.type,
+        answer_letter: letter || '',
+        answer_text: chosenText
+      };
+    } else {
+      return {
+        id: q.id,
+        question: q.text,
+        type: q.type,
+        answer_text: testData[q.id] || ''
+      };
+    }
+  });
+
+  // Сохраним как машинночитаемую и человекочитаемую версии
   localStorage.setItem('testData', JSON.stringify(testData));
+  localStorage.setItem('answersVerbose', JSON.stringify(answersVerbose));
   window.location.href = 'contact.html';
 }
 
