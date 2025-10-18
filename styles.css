@@ -528,6 +528,371 @@ h1, h2, h3 {
     text-transform: none !important;
 }
 
+
+.analysis-stage {
+    display: grid;
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+.analysis-card {
+    background: rgba(15, 16, 46, 0.78);
+    border: 1px solid rgba(78, 205, 196, 0.25);
+    border-radius: 24px;
+    padding: 2.5rem;
+    backdrop-filter: blur(18px);
+    box-shadow: 0 16px 60px rgba(5, 10, 35, 0.35);
+    position: relative;
+    overflow: hidden;
+}
+
+.analysis-card::after {
+    content: '';
+    position: absolute;
+    inset: -40% 10% 60% 55%;
+    background: radial-gradient(circle at center, rgba(78, 205, 196, 0.35), transparent 60%);
+    pointer-events: none;
+}
+
+.analysis-header {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 1.5rem;
+}
+
+.analysis-badge {
+    display: inline-block;
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(78, 205, 196, 0.15);
+    color: #4ecdc4;
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.analysis-header h2 {
+    font-size: 2rem;
+    margin: 1rem 0 0.75rem;
+    color: #ffffff;
+}
+
+.analysis-header p {
+    color: #dce7ff;
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.analysis-progress {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 1.75rem;
+}
+
+.analysis-progress-bar {
+    height: 6px;
+    background: rgba(78, 205, 196, 0.15);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.analysis-progress-fill {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, #4ecdc4 0%, #45b7d1 100%);
+    border-radius: 999px;
+    transition: width 0.6s cubic-bezier(0.22, 0.68, 0, 1.01);
+}
+
+.analysis-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 1rem;
+}
+
+.analysis-step {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1.25rem;
+    align-items: start;
+    background: rgba(18, 23, 52, 0.6);
+    border: 1px solid transparent;
+    border-radius: 18px;
+    padding: 1rem 1.25rem;
+    transition: border-color 0.3s ease, background 0.3s ease;
+}
+
+.analysis-step.active {
+    border-color: rgba(78, 205, 196, 0.6);
+    background: rgba(20, 34, 60, 0.85);
+}
+
+.analysis-step.completed {
+    border-color: rgba(78, 205, 196, 0.35);
+}
+
+.analysis-step .step-index {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background: rgba(78, 205, 196, 0.15);
+    color: #4ecdc4;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-top: 0.3rem;
+}
+
+.analysis-step h4 {
+    margin: 0 0 0.35rem;
+    color: #ffffff;
+    font-size: 1.05rem;
+}
+
+.analysis-step p {
+    margin: 0;
+    color: #d6e4ff;
+    font-size: 0.95rem;
+    line-height: 1.55;
+}
+
+.analysis-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #b7c8ff;
+    font-size: 0.95rem;
+    position: relative;
+    z-index: 1;
+}
+
+.analysis-status .status-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #4ecdc4;
+    box-shadow: 0 0 12px rgba(78, 205, 196, 0.8);
+}
+
+.analysis-status.error {
+    color: #ff7b7b;
+}
+
+.analysis-status.error .status-dot {
+    background: #ff7b7b;
+    box-shadow: 0 0 12px rgba(255, 107, 107, 0.8);
+}
+
+.retry-button {
+    margin-top: 1.5rem;
+    background: transparent;
+    border: 1px solid rgba(78, 205, 196, 0.5);
+    color: #4ecdc4;
+    padding: 0.75rem 1.5rem;
+    border-radius: 999px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.retry-button:hover {
+    background: rgba(78, 205, 196, 0.12);
+}
+
+.retry-button.hidden {
+    display: none;
+}
+
+.analysis-alternatives {
+    background: rgba(18, 22, 48, 0.65);
+    border: 1px solid rgba(69, 183, 209, 0.25);
+    border-radius: 20px;
+    padding: 2rem;
+    color: #e3ebff;
+}
+
+.analysis-alternatives h3 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    color: #ffffff;
+    font-size: 1.35rem;
+}
+
+.analysis-alternatives p {
+    margin: 0 0 1rem;
+    color: #c3d7ff;
+}
+
+.analysis-alternatives ul {
+    margin: 0;
+    padding-left: 1.25rem;
+    display: grid;
+    gap: 0.75rem;
+}
+
+.analysis-alternatives li {
+    line-height: 1.6;
+}
+
+.results-main {
+    animation: fadeIn 0.4s ease forwards;
+}
+
+.results-main .results-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 2.5rem;
+    margin-bottom: 3rem;
+}
+
+.results-main .speedometer-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.archetype-card {
+    background: rgba(22, 30, 60, 0.7);
+    border: 1px solid rgba(78, 205, 196, 0.25);
+    border-radius: 20px;
+    padding: 1.75rem;
+    box-shadow: 0 12px 48px rgba(8, 12, 40, 0.4);
+    text-align: center;
+}
+
+.archetype-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem 1rem;
+    border-radius: 999px;
+    background: rgba(69, 183, 209, 0.18);
+    color: #45b7d1;
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.archetype-card h3 {
+    margin: 1rem 0 0.5rem;
+    font-size: 2rem;
+    color: #ffffff;
+}
+
+.archetype-card .profile-subtitle {
+    margin: 0;
+    color: #cbd9ff;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.score-summary {
+    display: grid;
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.score-display {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.score-display .score-number {
+    font-size: 3.2rem;
+    font-weight: 700;
+    color: #4ecdc4;
+    text-shadow: 0 0 18px rgba(78, 205, 196, 0.45);
+}
+
+.score-display .score-text {
+    color: #d0d9ff;
+    font-size: 1rem;
+}
+
+.score-interpretation {
+    background: rgba(16, 23, 52, 0.65);
+    border: 1px solid rgba(69, 183, 209, 0.25);
+    border-radius: 18px;
+    padding: 1.25rem 1.5rem;
+    color: #dee7ff;
+    line-height: 1.6;
+}
+
+.score-interpretation h4 {
+    margin: 0 0 0.5rem;
+    color: #ffffff;
+    font-size: 1.1rem;
+}
+
+.score-interpretation .score-tip {
+    margin-top: 0.75rem;
+    color: #9fd7ff;
+    font-size: 0.95rem;
+    line-height: 1.55;
+}
+
+.personalized-message {
+    margin-top: 2.5rem;
+    background: rgba(12, 18, 42, 0.65);
+    border: 1px solid rgba(157, 78, 221, 0.25);
+    border-radius: 24px;
+    padding: 2.25rem;
+    color: #e8ecff;
+    line-height: 1.8;
+    box-shadow: 0 18px 55px rgba(6, 10, 30, 0.45);
+}
+
+.personalized-message p {
+    margin-bottom: 1.25rem;
+    font-size: 1.05rem;
+}
+
+.personalized-message p.archetype-line {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    color: #4ecdc4;
+    margin-bottom: 1.5rem;
+}
+
+.personalized-message p:last-child {
+    margin-bottom: 0;
+}
+
+.results-main .personal-strategy-section {
+    background: rgba(13, 18, 40, 0.7);
+    border: 1px solid rgba(157, 78, 221, 0.25);
+    border-radius: 24px;
+    padding: 2.25rem;
+    box-shadow: 0 18px 50px rgba(10, 6, 48, 0.4);
+}
+
+.results-main .personal-strategy-section h2 {
+    color: #ffffff;
+}
+
+.results-main .personal-strategy-section h3,
+.results-main .personal-strategy-section h4 {
+    color: #f0f4ff;
+}
+
+.results-main .personal-strategy-section p,
+.results-main .personal-strategy-section li {
+    color: #dfe6ff;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .hero-title {
@@ -570,4 +935,33 @@ h1, h2, h3 {
     }
 
     .about-cta { text-align: center; }
+
+    .analysis-card,
+    .analysis-alternatives {
+        padding: 1.75rem;
+    }
+
+    .analysis-header h2 {
+        font-size: 1.6rem;
+    }
+
+    .analysis-steps {
+        gap: 0.75rem;
+    }
+
+    .results-main .results-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .archetype-card h3 {
+        font-size: 1.6rem;
+    }
+
+    .score-display .score-number {
+        font-size: 2.6rem;
+    }
+
+    .personalized-message {
+        padding: 1.75rem;
+    }
 }

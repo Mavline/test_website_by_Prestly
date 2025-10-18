@@ -26,54 +26,84 @@
 
         <div class="results-content">
             <div class="container">
-                <div class="results-grid">
-                    <!-- Profile Section -->
-                    <div class="speedometer-section">
-                        <!-- СПИДОМЕТР И БАЛЛЫ ВРЕМЕННО ЗАКОММЕНТИРОВАНЫ (могут вернуться позже) -->
-                        <!--
-                        <h2>Уровень готовности к AI</h2>
-                        <div class="speedometer-container">
-                            <div class="speedometer">
-                                <div class="speedometer-arc"></div>
-                                <div class="speedometer-needle" id="needle"></div>
-                                <div class="speedometer-center"></div>
-                                <div class="speedometer-labels">
-                                    <span class="label-start">0</span>
-                                    <span class="label-middle">50</span>
-                                    <span class="label-end">100</span>
-                                </div>
+                <div class="analysis-stage" id="analysisStage">
+                    <div class="analysis-card">
+                        <div class="analysis-header">
+                            <span class="analysis-badge">AI анализирует ответы</span>
+                            <h2>Определяем ваш точный архетип</h2>
+                            <p id="analysisSubhead">Это занимает до 10 секунд: учитываем все 13 ответов и локальный расчёт.</p>
+                        </div>
+                        <div class="analysis-progress">
+                            <div class="analysis-progress-bar">
+                                <span class="analysis-progress-fill" id="analysisProgressFill"></span>
                             </div>
-                            <div class="score-display">
-                                <span class="score-number" id="scoreNumber">0</span>
-                                <span class="score-text">из 100</span>
-                            </div>
+                            <ul class="analysis-steps" id="analysisSteps">
+                                <li class="analysis-step active" data-step="1">
+                                    <span class="step-index">1</span>
+                                    <div class="step-body">
+                                        <h4>Собираем факты</h4>
+                                        <p>Переносим ваши ответы и локальный расчёт профиля.</p>
+                                    </div>
+                                </li>
+                                <li class="analysis-step" data-step="2">
+                                    <span class="step-index">2</span>
+                                    <div class="step-body">
+                                        <h4>Сравниваем архетипы</h4>
+                                        <p>Проверяем 10 сценариев поведения и ищем точное попадание.</p>
+                                    </div>
+                                </li>
+                                <li class="analysis-step" data-step="3">
+                                    <span class="step-index">3</span>
+                                    <div class="step-body">
+                                        <h4>Собираем рекомендации</h4>
+                                        <p>Готовим развёрнутый анализ и список быстрых шагов.</p>
+                                    </div>
+                                </li>
+                            </ul>
                         </div>
-                        -->
-
-                        <!-- Spinning Wheel будет здесь -->
-                        <div id="spinningWheel" style="text-align: center; margin: 40px 0;">
-                            <!-- Wheel animation will be inserted here by JavaScript -->
+                        <div class="analysis-status" id="analysisStatus">
+                            <span class="status-dot"></span>
+                            <span class="status-text">Подключаемся к модели OpenRouter…</span>
                         </div>
-
-                        <div class="profile-display">
-                            <h3 id="profile-type">Ваш архетип</h3>
-                            <p class="profile-subtitle">Определяем ваш уникальный подход к AI...</p>
-                        </div>
-                        <div class="score-interpretation" id="scoreInterpretation">
-                            <!-- Will be filled by JavaScript -->
-                        </div>
-                        <div class="personalized-message" id="personalized-message">
-                            <!-- Will be filled by JavaScript -->
-                        </div>
+                        <button class="retry-button hidden" id="analysisRetry">Повторить попытку</button>
                     </div>
-
-                    <!-- Personal Strategy Section -->
-                    <div class="personal-strategy-section">
-                        <div id="personalStrategy">
-                            <!-- Will be filled by JavaScript with full consultation -->
-                        </div>
+                    <div class="analysis-alternatives" id="analysisAlternatives">
+                        <h3>Пауза ожидания без колеса</h3>
+                        <p>Если захотите разнообразить опыт, можно добавить один из сценариев:</p>
+                        <ul>
+                            <li><strong>Диалоговый тизер.</strong> Показываем 2–3 живых тезиса будущего ответа («AI уже нашёл цитату…»).</li>
+                            <li><strong>Мини-кейс.</strong> Короткая история похожего пользователя + ссылка на подробный кейс.</li>
+                            <li><strong>Индикатор прогресса.</strong> Заполняем чек-лист подготовки и делимся микро-советами.</li>
+                        </ul>
                     </div>
                 </div>
+
+                <div id="resultsMain" class="results-main" hidden>
+                    <div class="results-grid">
+                        <!-- Profile Section -->
+                        <div class="speedometer-section">
+                            <div class="profile-display">
+                                <div class="archetype-card">
+                                    <span class="archetype-badge">Ваш архетип</span>
+                                    <h3 id="profile-type">Определяем...</h3>
+                                    <p class="profile-subtitle" id="profileSubtitle">AI сопоставляет ваши ответы с 10 архетипами.</p>
+                                </div>
+                            </div>
+                            <div class="score-summary">
+                                <div class="score-display">
+                                    <span class="score-number" id="scoreNumber">0</span>
+                                    <span class="score-text">из 100</span>
+                                </div>
+                                <div class="score-interpretation" id="scoreInterpretation"></div>
+                            </div>
+                            <div class="personalized-message" id="personalized-message"></div>
+                        </div>
+
+                        <!-- Personal Strategy Section -->
+                        <div class="personal-strategy-section">
+                            <div id="personalStrategy"></div>
+                        </div>
+                    </div>
 
                 <!-- Gift Section -->
                 <div class="gift-section">

@@ -48,334 +48,399 @@ function resolveArchetypeName(name) {
     return hit || 'Оптимизатор';
 }
 
-// Wheel colors - gradient colors for each sector
-const WHEEL_COLORS = [
-    '#ff6b6b',
-    '#4ecdc4',
-    '#45b7d1',
-    '#a8dadc',
-    '#f1c40f',
-    '#e74c3c',
-    '#3498db',
-    '#9b59b6',
-    '#2ecc71',
-    '#e67e22'
-];
-
-// Global wheel state
-let wheelRotation = 0;
-let isSpinning = false;
-let spinInterval = null;
-
 // Results page functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const results = JSON.parse(localStorage.getItem('testResults') || '{}');
+const ANALYSIS_PROGRESS = { 0: 0, 1: 32, 2: 68, 3: 100 };
 
-    if (!results.readinessScore) {
-        document.body.innerHTML = '<div style="text-align: center; padding: 50px; color: white;">Результаты теста не найдены. <a href="index.html" style="color: #4ecdc4;">Вернуться на главную</a></div>';
+const analysisState = {
+    stage: null,
+    steps: [],
+    progress: null,
+    status: null,
+    retryBtn: null,
+    subhead: null,
+    defaultSubhead: ''
+};
+
+let analysisTimeouts = [];
+let currentPayload = null;
+let currentArchetypeGuess = 'Оптимизатор';
+let storedResultsCache = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const storedResults = loadStoredResults();
+    if (!storedResults) {
+        renderMissingResults();
         return;
     }
 
-    // Если нет текста от ИИ — запускаем запрос немедленно на странице результатов
-    (async function startAIRequestIfNeeded(){
-        try {
-            const stored = JSON.parse(localStorage.getItem('testResults') || '{}');
-            const hasText = (stored.personalizedMessage || stored.aiGeneratedStrategy || stored.message || '').trim().length > 0;
-            const pending = JSON.parse(localStorage.getItem('pendingAIRequest') || 'null');
-            if (!hasText && pending && pending.testData) {
-                console.log('results.js: starting AI request (page init) with payload', pending);
-                const resp = await fetch('/api/generate-results', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(pending)
-                });
-                if (resp.ok) {
-                    const data = await resp.json();
-                    const text = (data.message || data.aiGeneratedStrategy || '').trim();
-                    console.log('results.js: AI response received on results page');
-                    const merged = Object.assign({}, stored, {
-                        personalizedMessage: text,
-                        aiGeneratedStrategy: text
-                    });
-                    localStorage.setItem('testResults', JSON.stringify(merged));
-                    localStorage.removeItem('pendingAIRequest');
-                    // если колесо уже остановилось и текстовый блок есть — показать сразу
-                    const messageElement = document.getElementById('personalized-message');
-                    if (messageElement && text) {
-                        const paragraphs = text.split(/\n{2,}/);
-                        messageElement.innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
-                    }
-                } else {
-                    console.warn('results.js: AI request failed with status', resp.status);
-                }
-            }
-        } catch (e) {
-            console.error('results.js: startAIRequestIfNeeded error', e);
+    storedResultsCache = storedResults;
+    currentArchetypeGuess = resolveArchetypeName(
+        storedResults.archetype ||
+        storedResults.profileName ||
+        ARCHETYPE_MAPPING[storedResults.profileType] ||
+        'Оптимизатор'
+    );
+
+    initAnalysisStage();
+    updateProfileCard(currentArchetypeGuess, { waiting: true });
+    renderScore(storedResults.readinessScore);
+    renderScoreInterpretation(storedResults.readinessScore, currentArchetypeGuess);
+    renderPersonalStrategy(storedResults);
+    logVectorDebug(storedResults);
+
+    const existingMessage = extractAiText(storedResults);
+    if (existingMessage) {
+        showResultsView();
+        updateProfileCard(currentArchetypeGuess, { waiting: false });
+        renderPersonalizedMessage(existingMessage);
+        return;
+    }
+
+    currentPayload = loadPendingPayload(storedResults);
+    if (!currentPayload) {
+        updateAnalysisStatus('Не удалось найти данные для повторного запроса. Пройдите тест заново.', true);
+        return;
+    }
+
+    startAnalysisTimeline();
+    updateAnalysisStatus('Подключаемся к модели OpenRouter…', false);
+
+    requestAiResults(currentPayload, currentArchetypeGuess).catch(error => {
+        console.error('results.js: AI request failed', error);
+    });
+});
+
+function initAnalysisStage() {
+    analysisState.stage = document.getElementById('analysisStage');
+    analysisState.steps = Array.from(document.querySelectorAll('.analysis-step'));
+    analysisState.progress = document.getElementById('analysisProgressFill');
+    analysisState.status = document.getElementById('analysisStatus');
+    analysisState.retryBtn = document.getElementById('analysisRetry');
+    analysisState.subhead = document.getElementById('analysisSubhead');
+    analysisState.defaultSubhead = analysisState.subhead ? analysisState.subhead.textContent : '';
+
+    if (analysisState.retryBtn) {
+        analysisState.retryBtn.addEventListener('click', handleRetryClick);
+    }
+
+    hideRetryButton();
+    setAnalysisStep(0);
+    setAnalysisStep(1);
+}
+
+function handleRetryClick() {
+    if (!currentPayload) {
+        updateAnalysisStatus('Нет данных для повторного запроса. Пожалуйста, пройдите тест заново.', true);
+        return;
+    }
+
+    if (analysisState.subhead && analysisState.defaultSubhead) {
+        analysisState.subhead.textContent = analysisState.defaultSubhead;
+    }
+
+    startAnalysisTimeline();
+    updateAnalysisStatus('Повторяем запрос. Это может занять до 10 секунд…', false);
+
+    requestAiResults(currentPayload, currentArchetypeGuess).catch(error => {
+        console.error('results.js: AI retry failed', error);
+    });
+}
+
+function loadStoredResults() {
+    try {
+        const stored = JSON.parse(localStorage.getItem('testResults') || '{}');
+        if (!stored || typeof stored.readinessScore !== 'number') {
+            return null;
         }
-    })();
+        return stored;
+    } catch (error) {
+        console.error('results.js: unable to parse stored results', error);
+        return null;
+    }
+}
 
-    // Создаём колесо фортуны и запускаем вращение с последующей остановкой на архетипе
-    createSpinningWheel();
+function renderMissingResults() {
+    document.body.innerHTML = '<div style="text-align:center;padding:50px;color:white;">Результаты теста не найдены. <a href="index.html" style="color:#4ecdc4;">Вернуться на главную</a></div>';
+}
 
-    // Получаем название архетипа и приводим к валидному элементу колеса
-    const archetypeNameRaw = results.archetype || results.profileName || ARCHETYPE_MAPPING[results.profileType] || 'Оптимизатор';
-    const archetypeName = resolveArchetypeName(archetypeNameRaw);
-    let fullText = (results.personalizedMessage || results.aiGeneratedStrategy || results.message || '').trim();
+function extractAiText(results) {
+    if (!results) return '';
+    return (results.personalizedMessage || results.aiGeneratedStrategy || results.message || '').trim();
+}
 
-    // Стартуем быстрое вращение и размытие подписей, затем плавно останавливаемся на выбранном архетипе
-    startSpinning();
-    setTimeout(() => {
-        // Плавно останавливаем колесо на выбранном архетипе
-        stopOnArchetype(archetypeName, async () => {
-            const profileElement = document.getElementById('profile-type');
-            if (profileElement) profileElement.textContent = archetypeName;
+function loadPendingPayload(results) {
+    const pending = safeParse(localStorage.getItem('pendingAIRequest'));
+    if (pending && pending.testData) {
+        return pending;
+    }
 
-            // Если текста нет, пробуем дожать генерацию здесь (ретрай)
-            if (!fullText) {
-                try {
-                    const pending = JSON.parse(localStorage.getItem('pendingAIRequest') || 'null');
-                    if (pending && pending.testData) {
-                        const resp = await fetch('/api/generate-results', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(pending)
-                        });
-                        if (resp.ok) {
-                            const data = await resp.json();
-                            fullText = (data.message || data.aiGeneratedStrategy || '').trim();
-                            // Обновляем сохранённые результаты
-                            const saved = JSON.parse(localStorage.getItem('testResults') || '{}');
-                            saved.personalizedMessage = fullText;
-                            saved.aiGeneratedStrategy = fullText;
-                            localStorage.setItem('testResults', JSON.stringify(saved));
-                            // Убираем метку ретрая
-                            localStorage.removeItem('pendingAIRequest');
-                        }
-                    }
-                } catch (e) {
-                    console.error('Retry generate-results on results page failed:', e);
-                }
-            }
+    const rawAnswers = safeParse(localStorage.getItem('testData'));
+    if (rawAnswers && results.profileType) {
+        return {
+            testData: rawAnswers,
+            profileType: results.profileType,
+            readinessScore: results.readinessScore
+        };
+    }
 
-            setTimeout(() => revealDescription(fullText), 1000);
+    return null;
+}
+
+async function requestAiResults(payload, fallbackArchetype) {
+    hideRetryButton();
+    try {
+        console.log('results.js: starting AI request with payload', payload);
+        const response = await fetch('/api/generate-results', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
         });
-    }, 1000);
 
-    // Update score display
-    const scoreElement = document.getElementById('scoreNumber');
-    if (scoreElement) {
-        scoreElement.textContent = results.readinessScore;
+        console.log('results.js: AI response status', response.status);
+        if (!response.ok) {
+            const errorPayload = await response.text().catch(() => '');
+            throw new Error(errorPayload || 'AI service returned an error');
+        }
+
+        const data = await response.json();
+        handleAiSuccess(data, fallbackArchetype);
+        return data;
+    } catch (error) {
+        handleAiFailure(error);
+        throw error;
+    }
+}
+
+function handleAiSuccess(data, fallbackArchetype) {
+    completeAnalysisTimeline();
+    updateAnalysisStatus('Результат готов — формируем презентацию.', false);
+
+    const rawMessage = (data.message || data.aiGeneratedStrategy || '').trim();
+    if (!rawMessage) {
+        throw new Error('AI вернул пустой ответ');
     }
 
-    // Текст и заголовок покажем после остановки колеса (см. выше)
+    const parsed = parseAiMessage(rawMessage, fallbackArchetype);
+    currentArchetypeGuess = parsed.archetype || fallbackArchetype;
+    currentPayload = null;
 
-    // Generate full personal strategy consultation
-    const strategyElement = document.getElementById('personalStrategy');
-    if (strategyElement && results.profileType) {
-        strategyElement.innerHTML = generatePersonalStrategy(results);
+    updateProfileCard(currentArchetypeGuess, { waiting: false });
+    renderPersonalizedMessage(parsed.text);
+    showResultsView();
+    saveAiResult(parsed.text, currentArchetypeGuess);
+    hideRetryButton();
+    if (analysisState.subhead) {
+        analysisState.subhead.textContent = 'Готово! Мы собрали персональный разбор и рекомендации.';
+    }
+}
+
+function handleAiFailure(error) {
+    clearAnalysisTimeline();
+    setAnalysisStep(2);
+    console.warn('results.js: AI request failed', error);
+    updateAnalysisStatus('Не удалось получить ответ от модели. Проверьте соединение и повторите попытку.', true);
+    if (analysisState.subhead) {
+        analysisState.subhead.textContent = 'Мы сохранили ваши ответы, можно повторить запрос без перезагрузки.';
+    }
+    showRetryButton();
+}
+
+function startAnalysisTimeline() {
+    clearAnalysisTimeline();
+    setAnalysisStep(1);
+    analysisTimeouts.push(setTimeout(() => setAnalysisStep(2), 1500));
+}
+
+function completeAnalysisTimeline() {
+    clearAnalysisTimeline();
+    setAnalysisStep(3);
+}
+
+function clearAnalysisTimeline() {
+    analysisTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+    analysisTimeouts = [];
+}
+
+function setAnalysisStep(stepNumber) {
+    if (!analysisState.steps.length) return;
+    analysisState.steps.forEach((step, index) => {
+        const current = index + 1;
+        step.classList.toggle('active', current === stepNumber);
+        step.classList.toggle('completed', current < stepNumber);
+    });
+
+    if (analysisState.progress) {
+        const percent = ANALYSIS_PROGRESS[stepNumber] ?? ANALYSIS_PROGRESS[0];
+        analysisState.progress.style.width = `${percent}%`;
+    }
+}
+
+function updateAnalysisStatus(text, isError) {
+    if (!analysisState.status) return;
+    const textNode = analysisState.status.querySelector('.status-text');
+    if (textNode) {
+        textNode.textContent = text;
+    }
+    analysisState.status.classList.toggle('error', !!isError);
+}
+
+function showRetryButton() {
+    if (!analysisState.retryBtn) return;
+    analysisState.retryBtn.classList.remove('hidden');
+    analysisState.retryBtn.textContent = 'Повторить попытку';
+}
+
+function hideRetryButton() {
+    if (!analysisState.retryBtn) return;
+    analysisState.retryBtn.classList.add('hidden');
+}
+
+function updateProfileCard(archetypeName, options = {}) {
+    const titleEl = document.getElementById('profile-type');
+    const subtitleEl = document.getElementById('profileSubtitle');
+
+    if (titleEl) {
+        titleEl.textContent = archetypeName || 'Архетип уточняется';
     }
 
-    // Display vector scores for debugging (optional)
-    if (results.vectors) {
+    if (subtitleEl) {
+        subtitleEl.textContent = options.waiting
+            ? `AI сопоставляет ваши ответы и проверяет, действительно ли вы «${archetypeName}».`
+            : `Профиль «${archetypeName}» подтверждён по вашим ответам.`;
+    }
+}
+
+function renderScore(score) {
+    const scoreEl = document.getElementById('scoreNumber');
+    if (!scoreEl || typeof score !== 'number') return;
+    scoreEl.textContent = score;
+}
+
+function renderScoreInterpretation(score, archetypeName) {
+    const container = document.getElementById('scoreInterpretation');
+    if (!container) return;
+
+    const narrative = getScoreNarrative(score, archetypeName);
+    container.innerHTML = `
+        <h4>${narrative.title}</h4>
+        <p>${narrative.body}</p>
+        <p class="score-tip">${narrative.tip}</p>
+    `;
+}
+
+function getScoreNarrative(score, archetypeName) {
+    if (typeof score !== 'number') {
+        return {
+            title: 'Балл не определён',
+            body: 'Мы не нашли сохранённый балл. Пройдите тест ещё раз, чтобы получить свежую оценку.',
+            tip: 'После повторного прохождения мы автоматически подберём архетип и рекомендации.'
+        };
+    }
+
+    if (score >= 80) {
+        return {
+            title: 'Высокий уровень готовности',
+            body: `У вас уже сформирован крепкий фундамент и мышление «${archetypeName}». Важно масштабировать то, что работает, и закрепить новые привычки.`,
+            tip: 'Выберите одно направление для глубокой проработки и закрепите быстрыми победами.'
+        };
+    }
+
+    if (score >= 60) {
+        return {
+            title: 'Уверенный средний уровень',
+            body: `Вы видите потенциал AI и как «${archetypeName}» уже пробовали инструменты. Осталось собрать систему и избавиться от хаотичных экспериментов.`,
+            tip: 'Запланируйте недельный спринт: одна ключевая задача → один инструмент → измеримый эффект.'
+        };
+    }
+
+    if (score >= 40) {
+        return {
+            title: 'Базовый уровень готовности',
+            body: `Вы делаете первые шаги и формируете практику «${archetypeName}». Главное — не останавливаться и получать поддержку в момент внедрения.`,
+            tip: 'Начните с одной рабочей рутины и доведите её до автоматизма с помощью AI.'
+        };
+    }
+
+    return {
+        title: 'Стартовая точка',
+        body: `AI пока больше про интерес и любопытство. Для архетипа «${archetypeName}» важно увидеть быстрый успех и снять страх ошибки.`,
+        tip: 'Выберите инструмент, который решит конкретную боль недели, и пройдите через него с наставником или гайдом.'
+    };
+}
+
+function renderPersonalizedMessage(rawText) {
+    const container = document.getElementById('personalized-message');
+    if (!container) return;
+
+    const text = (rawText || '').trim();
+    if (!text) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const paragraphs = text.split(/
+{2,}/).map(part => part.trim()).filter(Boolean);
+    container.innerHTML = paragraphs
+        .map((paragraph, index) => {
+            const cls = index === 0 && /^АРХЕТИП/i.test(paragraph) ? ' class="archetype-line"' : '';
+            return `<p${cls}>${paragraph}</p>`;
+        })
+        .join('');
+}
+
+function parseAiMessage(text, fallbackArchetype) {
+    const clean = (text || '').trim();
+    const archetypeMatch = clean.match(/АРХЕТИП:\s*([\p{L}\s\-]+)/iu);
+    const archetype = archetypeMatch ? resolveArchetypeName(archetypeMatch[1].trim()) : fallbackArchetype;
+    return {
+        archetype,
+        text: clean
+    };
+}
+
+function saveAiResult(message, archetypeName) {
+    const stored = storedResultsCache ? { ...storedResultsCache } : {};
+    stored.personalizedMessage = message;
+    stored.aiGeneratedStrategy = message;
+    stored.archetype = archetypeName;
+    storedResultsCache = stored;
+    localStorage.setItem('testResults', JSON.stringify(stored));
+    localStorage.removeItem('pendingAIRequest');
+}
+
+function showResultsView() {
+    const stage = analysisState.stage;
+    const main = document.getElementById('resultsMain');
+    if (stage) {
+        stage.style.display = 'none';
+    }
+    if (main) {
+        main.hidden = false;
+    }
+}
+
+function renderPersonalStrategy(results) {
+    const container = document.getElementById('personalStrategy');
+    if (!container || !results?.profileType) return;
+    container.innerHTML = generatePersonalStrategy(results);
+}
+
+function logVectorDebug(results) {
+    if (results && results.vectors) {
         console.log('Векторы архетипов:', results.vectors);
         console.log('Доминантный архетип:', results.profileType);
     }
-
-    // Спидометр отключён: запускаем анимацию только если элементы есть в DOM
-    if (typeof results.readinessScore === 'number' && document.getElementById('needle')) {
-        animateSpeedometer(results.readinessScore);
-    }
-});
-
-/**
- * Creates the spinning wheel SVG and inserts it into the DOM
- */
-function createSpinningWheel() {
-    const container = document.getElementById('spinningWheel');
-    if (!container) return;
-
-    const isMobile = window.innerWidth <= 768;
-    const size = isMobile ? 250 : 300;
-    const centerX = size / 2;
-    const centerY = size / 2;
-    const radius = size / 2 - 10;
-    const numSectors = ALL_ARCHETYPES.length;
-    const anglePerSector = 360 / numSectors;
-    const angleRad = (Math.PI * 2) / numSectors;
-    const fontSize = Math.max(10, Math.round(size * 0.045));
-
-    // Build clipPaths for each sector
-    let clipDefs = '';
-    for (let i = 0; i < numSectors; i++) {
-        const startAngle = i * anglePerSector - 90;
-        const endAngle = (i + 1) * anglePerSector - 90;
-        const sr = (startAngle * Math.PI) / 180;
-        const er = (endAngle * Math.PI) / 180;
-        const x1 = centerX + radius * Math.cos(sr);
-        const y1 = centerY + radius * Math.sin(sr);
-        const x2 = centerX + radius * Math.cos(er);
-        const y2 = centerY + radius * Math.sin(er);
-        const largeArc = anglePerSector > 180 ? 1 : 0;
-        const pathData = `M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
-        clipDefs += `<clipPath id="wheelClip-${i}"><path d="${pathData}"></path></clipPath>`;
-    }
-
-    // Create SVG
-    let svgHTML = `
-        <div class="wheel-container spinning">
-            <div class="wheel-pointer"></div>
-            <svg id="fortuneWheel" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="spinning-wheel">
-                <defs>
-                    <filter id="wheelShadow" x="-50%" y="-50%" width="200%" height="200%">
-                        <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
-                        <feOffset dx="0" dy="2" result="offsetblur"/>
-                        <feComponentTransfer>
-                            <feFuncA type="linear" slope="0.5"/>
-                        </feComponentTransfer>
-                        <feMerge>
-                            <feMergeNode/>
-                            <feMergeNode in="SourceGraphic"/>
-                        </feMerge>
-                    </filter>
-                    ${clipDefs}
-                </defs>
-                <g id="fortuneWheelGroup" filter="url(#wheelShadow)" style="transform-box: fill-box; transform-origin: 50% 50%;">
-    `;
-
-    // Draw sectors + svg labels clipped to sectors
-    for (let i = 0; i < numSectors; i++) {
-        const startAngle = i * anglePerSector - 90; // Start from top
-        const endAngle = (i + 1) * anglePerSector - 90;
-        const startRad = (startAngle * Math.PI) / 180;
-        const endRad = (endAngle * Math.PI) / 180;
-        const x1 = centerX + radius * Math.cos(startRad);
-        const y1 = centerY + radius * Math.sin(startRad);
-        const x2 = centerX + radius * Math.cos(endRad);
-        const y2 = centerY + radius * Math.sin(endRad);
-        const largeArc = anglePerSector > 180 ? 1 : 0;
-        const pathData = `M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
-
-        svgHTML += `<g class="sector" data-index="${i}">`;
-        svgHTML += `<path d="${pathData}" fill="${WHEEL_COLORS[i]}" stroke="#ffffff" stroke-width="2" data-index="${i}"/>`;
-
-        const angleMid = (startAngle + endAngle) / 2;
-        const textRadius = radius * 0.62;
-        const tx = centerX + textRadius * Math.cos((angleMid * Math.PI) / 180);
-        const ty = centerY + textRadius * Math.sin((angleMid * Math.PI) / 180);
-        const textLen = Math.max(40, Math.round(textRadius * angleRad * 0.85));
-        const textRotation = angleMid + 90;
-
-        svgHTML += `<text class="label-text" data-index="${i}" x="${tx}" y="${ty}" fill="#fff" font-size="${fontSize}" font-weight="700" text-anchor="middle" dominant-baseline="middle" transform="rotate(${textRotation}, ${tx}, ${ty})" clip-path="url(#wheelClip-${i})" lengthAdjust="spacingAndGlyphs" textLength="${textLen}">${ALL_ARCHETYPES[i]}</text>`;
-        svgHTML += `</g>`;
-    }
-
-    // Add center circle
-    svgHTML += `
-        <circle cx="${centerX}" cy="${centerY}" r="25" fill="#1a1a2e" stroke="#ffffff" stroke-width="3"/>
-        <circle cx="${centerX}" cy="${centerY}" r="15" fill="#4ecdc4" stroke="#ffffff" stroke-width="2"/>
-    `;
-
-    svgHTML += `</g></svg></div>`;
-
-    container.innerHTML = svgHTML;
 }
 
-/**
- * Starts the wheel spinning continuously
- */
-function startSpinning() {
-    if (isSpinning) return;
-
-    isSpinning = true;
-    const group = document.getElementById('fortuneWheelGroup');
-    if (!group) return;
-
-    const wc = document.querySelector('.wheel-container');
-    if (wc) wc.classList.add('spinning');
-
-    // Fast continuous rotation
-    spinInterval = setInterval(() => {
-        wheelRotation += 5; // 5 degrees per frame
-        group.style.transform = `rotate(${wheelRotation}deg)`;
-    }, 16); // ~60fps
-}
-
-/**
- * Stops the wheel on a specific archetype with smooth deceleration
- * @param {string} archetypeName - Name of the archetype to land on
- */
-function stopOnArchetype(archetypeName, onStop) {
-    if (!isSpinning) return;
-
-    const group = document.getElementById('fortuneWheelGroup');
-    if (!group) return;
-
-    // Stop the fast spinning
-    clearInterval(spinInterval);
-    isSpinning = false;
-
-    // Find the index of the target archetype
-    const targetIndex = ALL_ARCHETYPES.indexOf(archetypeName);
-    if (targetIndex === -1) {
-        console.warn('Archetype not found, using fallback:', archetypeName);
-        return stopOnArchetype('Оптимизатор', onStop);
+function safeParse(value) {
+    if (!value) return null;
+    try {
+        return JSON.parse(value);
+    } catch (error) {
+        console.warn('results.js: failed to parse value from storage', error);
+        return null;
     }
-
-    // Calculate target angle
-    const numSectors = ALL_ARCHETYPES.length;
-    const anglePerSector = 360 / numSectors;
-
-    // The pointer is at the top (12 o'clock position)
-    // We want the target sector to be under the pointer
-    // Add extra spins for dramatic effect (3-5 full rotations)
-    const extraSpins = 3 + Math.floor(Math.random() * 3);
-    const targetAngle = targetIndex * anglePerSector + anglePerSector / 2;
-
-    // Calculate final rotation (normalize current rotation and add target)
-    const normalizedCurrent = wheelRotation % 360;
-    let targetRotation = extraSpins * 360 + (360 - targetAngle);
-
-    // Adjust to ensure we rotate forward
-    if (targetRotation - normalizedCurrent < 360) {
-        targetRotation += 360;
-    }
-
-    const finalRotation = wheelRotation + (targetRotation - normalizedCurrent);
-
-    // Smooth deceleration animation
-    group.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
-    group.style.transform = `rotate(${finalRotation}deg)`;
-
-    wheelRotation = finalRotation;
-
-    // Optional: highlight the winning sector after animation completes
-    setTimeout(() => {
-        console.log('Wheel stopped on:', archetypeName);
-        highlightWinningSector(archetypeName);
-        const wc = document.querySelector('.wheel-container');
-        if (wc) wc.classList.remove('spinning');
-        if (typeof onStop === 'function') onStop();
-    }, 4000);
 }
-
-function highlightWinningSector(archetypeName) {
-    const idx = ALL_ARCHETYPES.indexOf(archetypeName);
-    if (idx === -1) return;
-    const path = document.querySelector(`.sector path[data-index="${idx}"]`);
-    const text = document.querySelector(`text.label-text[data-index="${idx}"]`);
-    if (path) path.classList.add('winning-sector');
-    if (text) text.classList.add('winning-label');
-}
-
-function revealDescription(fullText) {
-    const messageElement = document.getElementById('personalized-message');
-    if (!messageElement) return;
-    const text = (fullText || '').trim();
-    if (!text) return;
-    const paragraphs = text.split(/\n{2,}/);
-    messageElement.innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
-}
-
 function displayResults(results, userData) {
     // Display score interpretation
     const interpretation = document.getElementById('scoreInterpretation');
@@ -737,19 +802,6 @@ function animateSpeedometer(targetScore) {
         }
     }, stepDuration);
 }
-
-// Inject minimal CSS tweaks for blur effect while spinning
-(function injectWheelStyles(){
-    const style = document.createElement('style');
-    style.textContent = `
-    .wheel-container { overflow: hidden; }
-    .wheel-container.spinning text.label-text { filter: blur(2px); opacity: 0.7; transition: filter .2s linear, opacity .2s linear; }
-    .wheel-container:not(.spinning) text.label-text { filter: none; opacity: 1; }
-    .sector path.winning-sector { filter: drop-shadow(0 0 8px rgba(255,255,255,0.6)); stroke:#fff; stroke-width:3; transform: scale(1.04); transform-box: fill-box; transform-origin: 50% 50%; }
-    text.winning-label { font-size: 1.2em; font-weight: 800; }
-    `;
-    document.head.appendChild(style);
-})();
 
 function downloadGift() {
     const results = JSON.parse(localStorage.getItem('testResults') || '{}');
@@ -1432,81 +1484,3 @@ style.textContent = `
             align-items: center;
         }
 
-        .wheel-container {
-            transform: scale(0.9);
-        }
-
-        .wheel-label {
-            font-size: 0.7rem !important;
-        }
-    }
-
-    /* Spinning Wheel Styles */
-    .wheel-container {
-        position: relative;
-        display: inline-block;
-        margin: 20px auto;
-    }
-
-    .spinning-wheel {
-        display: block;
-        transition: none;
-        will-change: transform;
-    }
-
-    .wheel-pointer {
-        position: absolute;
-        top: -15px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 0;
-        height: 0;
-        border-left: 15px solid transparent;
-        border-right: 15px solid transparent;
-        border-top: 30px solid #ff6b6b;
-        z-index: 100;
-        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-    }
-
-    .wheel-pointer::after {
-        content: '';
-        position: absolute;
-        top: -30px;
-        left: -15px;
-        width: 30px;
-        height: 30px;
-        background: #ff6b6b;
-        border-radius: 50%;
-        border: 3px solid #ffffff;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    }
-
-    .wheel-labels {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-    }
-
-    .wheel-label {
-        position: absolute;
-        color: #ffffff;
-        font-weight: 700;
-        font-size: 0.8rem;
-        text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
-        white-space: nowrap;
-        text-align: center;
-        pointer-events: none;
-        user-select: none;
-    }
-
-    #spinningWheel {
-        min-height: 350px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-`;
-document.head.appendChild(style);
