@@ -1,6 +1,180 @@
 // Vercel Serverless Function for OpenRouter API
 // Model: Z.AI: GLM 4.6
 
+const OPTION_LETTERS = ['A', 'B', 'C', 'D'];
+
+const QUESTION_BANK = [
+    { id: 'q1', text: 'Какова ваша основная роль в рабочем процессе?', options: [
+        'Я — исполнитель: отвечаю за конкретные задачи и их качество.',
+        'Я — координатор/менеджер: управляю процессами и/или командой.',
+        'Я — стратег/владелец: определяю вектор развития, ищу новые возможности.',
+        'Я — «универсальный солдат»: делаю все вышеперечисленное.'
+    ] },
+    { id: 'q2', text: 'С какой из этих рутинных задач вы сталкиваетесь чаще всего?', options: [
+        'Обработка и структурирование больших объемов информации (отчеты, письма, документы).',
+        'Поиск идей, подготовка контента (презентации, статьи, посты).',
+        'Монотонные операции и повторяющиеся действия в программах.',
+        'Анализ данных для принятия решений (поиск трендов, аномалий).'
+    ] },
+    { id: 'q3', text: 'Как бы вы описали свой текущий уровень владения современными цифровыми инструментами (кроме стандартного офисного пакета)?', options: [
+        'Уверенный пользователь: легко осваиваю новые программы, если есть инструкция.',
+        'Энтузиаст: пробую новые сервисы и приложения «для себя», ищу способы оптимизации.',
+        'Power User: активно использую скрипты, макросы, сложные формулы или no-code/low-code платформы.',
+        'Новичок: предпочитаю проверенные и знакомые инструменты.'
+    ] },
+    { id: 'q4', text: 'Как вы оцениваете влияние AI на вашу отрасль в ближайшие 2-3 года?', options: [
+        'Критическое: те, кто не адаптируется, останутся позади.',
+        'Значительное: появятся новые инструменты, но основы профессии не изменятся.',
+        'Умеренное: коснется только некоторых аспектов работы.',
+        'Пока неясно: слишком много шума, мало конкретики.'
+    ] },
+    { id: 'q5', text: 'Что является главным барьером для вас в активном использовании AI прямо сейчас?', options: [
+        'Нехватка времени: нет свободных часов, чтобы сесть и разобраться.',
+        'Информационный перегруз: неясно, с чего начать, какие инструменты действительно полезны.',
+        'Техническая сложность: кажется, что это требует навыков программирования.',
+        'Отсутствие конкретной задачи: не понимаю, как применить AI в своей работе.'
+    ] },
+    { id: 'q6', text: 'Какое из утверждений об AI вызывает у вас наибольшее опасение?', options: [
+        '«AI может обесценить мой опыт и даже заменить меня».',
+        '«Данные, которые я доверю AI, могут быть использованы небезопасно».',
+        '«Это “черный ящик”, я не смогу контролировать результат и нести за него ответственность».',
+        '«Чтобы получить реальную пользу, нужны огромные бюджеты».'
+    ] },
+    { id: 'q7', text: 'Вспомните свой последний опыт изучения новой сложной технологии. Что было самым трудным?', options: [
+        'Найти качественные, структурированные материалы.',
+        'Совмещать обучение с основной работой.',
+        'Отсутствие наставника, которому можно задать вопрос.',
+        'Понять, как перейти от теории к практике и получить первый результат.'
+    ] },
+    { id: 'q8', text: 'Представьте, что вы уже начали внедрять AI. Какая гипотетическая проблема вас тревожит больше всего?', options: [
+        'Я потрачу много времени на обучение, но не получу ожидаемого роста производительности.',
+        'Мое руководство или команда не оценят инициативу, сочтут это «игрушками».',
+        'Инструменты, которые я освою, быстро устареют.',
+        'Я совершу ошибку из-за неправильного использования AI, которая будет стоить дорого.'
+    ] },
+    { id: 'q9', text: 'Если бы вы могли получить один «суперэффект» от AI уже завтра, что бы вы выбрали?', options: [
+        'Освободить 5-10 часов в неделю за счет автоматизации рутины.',
+        'Генерировать идеи и решения для сложных задач на порядок быстрее.',
+        'Создать персонализированного ассистента, который помогает с аналитикой и планированием.',
+        'Получить новое, востребованное на рынке умение и повысить свою стоимость как специалиста.'
+    ] },
+    { id: 'q10', text: 'Какой формат обучения вы считаете для себя наиболее эффективным?', options: [
+        'Короткий интенсив (мастер-класс): один конкретный инструмент/навык за несколько часов.',
+        'Комплексный курс: глубокое погружение в тему с домашними заданиями и обратной связью.',
+        'Практический воркшоп: совместное создание работающего решения (например, агента) под руководством эксперта.',
+        'Самостоятельное изучение по предоставленным материалам с возможностью задавать вопросы в чате.'
+    ] },
+    { id: 'q11', text: 'Что для вас важнее в обучении?', options: [
+        'Фундаментальные знания: я хочу понимать, «как это работает» изнутри.',
+        'Практические инструменты: мне нужен готовый воркфлоу, который я смогу применить сразу после занятия.',
+        'Поддержка и нетворкинг: важно быть в сообществе единомышленников и общаться с наставником.',
+        'Гибкость: возможность проходить обучение в своем темпе.'
+    ] },
+    { id: 'q12', text: 'Какое направление вам кажется наиболее перспективным для ваших задач?', options: [
+        'Автоматизация рабочих процессов (Workflow Automation).',
+        'Создание умных чат-ботов и агентов.',
+        'Продвинутый анализ данных и прогнозирование.',
+        'Генерация креативного контента (тексты, изображения).'
+    ] },
+    { id: 'q13', text: 'Есть ли какая-то конкретная задача или проблема в вашей работе, для которой вы ищете решение, но не нашли ее в вариантах выше? Опишите ее кратко.', options: [] }
+];
+
+const ARCHETYPE_LABELS = {
+    strategist: 'Визионер',
+    optimizer: 'Оптимизатор',
+    pioneer: 'Предприниматель',
+    analyst: 'Аналитик',
+    pragmatist: 'Прагматик',
+    enthusiast: 'Энтузиаст',
+    skeptic: 'Скептик',
+    observer: 'Наблюдатель',
+    generalist: 'Универсал',
+    seeker: 'Искатель'
+};
+
+function expandTestDataForPrompt(testData = {}) {
+    const answers = [];
+    QUESTION_BANK.forEach((question, index) => {
+        const raw = testData[question.id];
+        if (raw === undefined || raw === null || raw === '') {
+            answers.push(`${index + 1}. ${question.text}\nОтвет: не указан (нужно уточнение).`);
+            return;
+        }
+
+        if (question.options.length === 0) {
+            const freeText = String(raw).trim() || 'Ответ не был дан';
+            answers.push(`${index + 1}. ${question.text}\nСвободный ответ: ${freeText}`);
+            return;
+        }
+
+        const letter = String(raw).trim().toUpperCase();
+        const optionIndex = OPTION_LETTERS.indexOf(letter);
+        const optionText = optionIndex >= 0 && question.options[optionIndex]
+            ? question.options[optionIndex]
+            : 'Вариант не распознан';
+
+        answers.push(`${index + 1}. ${question.text}\nВыбранный вариант (${letter || '?'}): ${optionText}`);
+    });
+    return answers.join('\n\n');
+}
+
+function isResponseLongEnough(text) {
+    if (!text) return false;
+    const trimmed = text.trim();
+    const denseLength = trimmed.replace(/\s+/g, '').length;
+    return denseLength >= 2300 && /^АРХЕТИП:/i.test(trimmed);
+}
+
+async function callOpenRouterWithTimeout(apiKey, messages) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
+
+    try {
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': process.env.SITE_URL || 'https://www.expertai.academy',
+                'X-Title': 'AI Readiness Test'
+            },
+            body: JSON.stringify({
+                model: 'z-ai/glm-4.6',
+                messages,
+                temperature: 0.7,
+                max_tokens: 2600
+            }),
+            signal: controller.signal
+        });
+
+        const bodyText = await response.text();
+        let data = null;
+        try {
+            data = bodyText ? JSON.parse(bodyText) : null;
+        } catch (parseError) {
+            console.error('OpenRouter JSON parse error:', parseError);
+        }
+
+        if (!response.ok) {
+            const message = data?.error || bodyText || `AI service error (${response.status})`;
+            throw new Error(message);
+        }
+
+        if (!data) {
+            throw new Error('Empty response from AI service');
+        }
+
+        const aiMessage = data.choices?.[0]?.message?.content?.trim();
+        if (!aiMessage) {
+            throw new Error('No response from AI');
+        }
+
+        return { aiMessage, usage: data.usage, raw: data };
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
 export default async function handler(req, res) {
     // CORS headers
     res.setHeader('Access-Control-Allow-Credentials', true);
@@ -45,6 +219,8 @@ export default async function handler(req, res) {
             return res.status(500).json({ error: 'API configuration missing' });
         }
 
+        const detailedAnswers = expandTestDataForPrompt(testData || {});
+
         // Prepare prompt for GLM 4.6 with 10 archetypes
         const systemPrompt = `Вы - эксперт по AI и автоматизации с опытом анализа мотивации и подходов людей к технологическим изменениям.
 
@@ -74,94 +250,84 @@ export default async function handler(req, res) {
 - Проанализировать ВСЕ ответы пользователя
 - ВЫБРАТЬ ОДИН архетип из 10 (наиболее подходящий)
 - Дать честный, развернутый, интересный анализ
-- Быть конкретным, многословным (4-6 абзацев)
-- Говорить правду, но поддерживать`;
+- Быть конкретным, многословным (не менее 4 больших абзацев)
+- Поддерживать человека, но говорить правду`;
 
-        const userPrompt = `Данные теста (ответы пользователя):
-${JSON.stringify(testData, null, 2)}
+        const displayArchetype = ARCHETYPE_LABELS[profileType] || profileType || 'Неизвестно';
 
-ОБЯЗАТЕЛЬНО начните свой ответ с названия архетипа в формате:
-АРХЕТИП: [название]
+        const userPrompt = `Контекст пользователя:
+- Предварительно рассчитанный профиль: ${displayArchetype}
+- Балл готовности: ${readinessScore ?? 'не указан'} из 100
 
-Затем создайте развернутое персонализированное сообщение (4-6 абзацев):
+Полный список ответов (обязательно учти каждый пункт, упоминай их в тексте и цитируй ключевые фразы):
+${detailedAnswers}
 
-1. **АНАЛИЗ**: Объясните, почему вы выбрали именно этот архетип. Процитируйте конкретные ответы пользователя, которые на это указывают.
+ОБЯЗАТЕЛЬНО начни свой ответ с строки:
+АРХЕТИП: [название архетипа]
 
-2. **ХАРАКТЕРИСТИКА**: Опишите, как этот архетип проявляется у данного человека. Какие у него сильные стороны, какие барьеры, что его мотивирует.
+Далее подготовь развёрнутый анализ в 5 частях (каждая — отдельный абзац 5-7 предложений, общий объём не менее 3000 знаков):
+1. **Выбор архетипа** — объясни, почему выбран именно этот архетип, опираясь на конкретные ответы (приводи цитаты в кавычках).
+2. **Глубокий портрет** — покажи сильные стороны и мотивацию человека, как они проявляются в его задачах и стиле работы.
+3. **Точки риска** — честно опиши ограничения, страхи и что может пойти не так, опираясь на ответы.
+4. **Ресурсы и поддержка** — что у человека уже есть (компетенции, окружение, привычки), что поможет внедрять AI.
+5. **Первые шаги** — дай 4 конкретных действия с привязкой к архетипу и ответам.
 
-3. **ЧЕСТНАЯ ОЦЕНКА**: Что уже есть у человека, что ему поможет. Чего не хватает или что может помешать. Без приукрашивания, но с поддержкой.
+Стиль: профессиональный коуч, который говорит по делу, без воды и клише. Если текста получается меньше 3000 знаков, продолжай развивать мысли (добавь примеры, формулируй более подробно), пока требование не выполнено.`;
 
-4. **КОНКРЕТНЫЕ ШАГИ**: 3-4 практических действия, которые стоит сделать в первую очередь, учитывая его архетип и ответы.
+        const messages = [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+        ];
 
-Тон: профессиональный коуч, который говорит правду и вдохновляет. Без мотивационной воды, с конкретикой.
+        const maxAttempts = 2;
+        let attempts = 0;
+        let aiMessage = '';
+        let usage = null;
+        let satisfiedLength = false;
 
-ВАЖНО: Первая строка ОБЯЗАТЕЛЬНО должна быть "АРХЕТИП: [название]"`;
+        while (attempts < maxAttempts) {
+            attempts += 1;
+            const response = await callOpenRouterWithTimeout(OPENROUTER_API_KEY, messages);
+            aiMessage = response.aiMessage;
+            usage = response.usage;
+            satisfiedLength = isResponseLongEnough(aiMessage);
 
-        // Call OpenRouter API with timeout
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 60000); // 60 second timeout (модель может думать 1-2 минуты)
+            if (satisfiedLength) {
+                break;
+            }
 
-        try {
-            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': process.env.SITE_URL || 'https://www.expertai.academy',
-                    'X-Title': 'AI Readiness Test'
-                },
-                body: JSON.stringify({
-                    model: 'z-ai/glm-4.6',
-                    messages: [
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: userPrompt }
-                    ],
-                    temperature: 0.7,
-                    max_tokens: 1500  // Увеличено для развернутых ответов
-                }),
-                signal: controller.signal
+            messages.push({ role: 'assistant', content: aiMessage });
+            messages.push({
+                role: 'user',
+                content: 'Предыдущий ответ получился короче 3000 символов или без полной структуры. Перепиши весь разбор: 5 абзацев по 5-7 предложений, начни с «АРХЕТИП:», подробно ссылайся на ответы пользователя и добавь конкретику.'
             });
-            clearTimeout(timeout);
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('OpenRouter API error:', errorText);
-                return res.status(response.status).json({
-                    error: 'AI service error',
-                    details: errorText
-                });
-            }
-
-            const data = await response.json();
-            const aiMessage = data.choices?.[0]?.message?.content;
-
-            if (!aiMessage) {
-                throw new Error('No response from AI');
-            }
-
-            return res.status(200).json({
-                success: true,
-                message: aiMessage,
-                profile: profileType,
-                readinessScore: readinessScore,
-                aiGeneratedStrategy: aiMessage,
-                usage: data.usage
-            });
-
-        } catch (fetchError) {
-            clearTimeout(timeout);
-            if (fetchError.name === 'AbortError') {
-                console.error('OpenRouter API timeout');
-                return res.status(504).json({
-                    error: 'AI service timeout',
-                    message: 'Request took too long'
-                });
-            }
-            throw fetchError;
         }
+
+        if (!aiMessage) {
+            throw new Error('AI вернул пустой ответ');
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: aiMessage,
+            profile: profileType,
+            readinessScore: readinessScore,
+            aiGeneratedStrategy: aiMessage,
+            usage,
+            meta: {
+                satisfiedLength,
+                attempts
+            }
+        });
 
     } catch (error) {
         console.error('Error in generate-results:', error);
+        if (error.name === 'AbortError') {
+            return res.status(504).json({
+                error: 'AI service timeout',
+                message: 'Request took too long'
+            });
+        }
         return res.status(500).json({
             error: 'Internal server error',
             message: error.message

@@ -26,26 +26,27 @@ const ALL_ARCHETYPES = [
     'Искатель'
 ];
 
-// Synonyms to map 4-tier labels or close Russian names into wheel archetypes
 const ARCHETYPE_SYNONYMS = {
     'Практик': 'Прагматик',
+    'Практик-исследователь': 'Прагматик',
     'Эксперт': 'Оптимизатор',
     'Исследователь': 'Искатель',
-    'Наблюдатель': 'Наблюдатель',
     'Стратег': 'Визионер',
-    'Координатор': 'Универсал'
+    'Координатор': 'Универсал',
+    'Наблюдатель 2.0': 'Наблюдатель'
 };
 
 function resolveArchetypeName(name) {
     if (!name) return 'Оптимизатор';
-    // exact
     if (ALL_ARCHETYPES.includes(name)) return name;
-    // synonyms
     if (ARCHETYPE_SYNONYMS[name]) return ARCHETYPE_SYNONYMS[name];
-    // fuzzy: try by lowercase includes
-    const n = String(name).toLowerCase();
-    const hit = ALL_ARCHETYPES.find(a => a.toLowerCase().includes(n) || n.includes(a.toLowerCase()));
-    return hit || 'Оптимизатор';
+
+    const normalized = String(name).trim().toLowerCase();
+    const byIncludes = ALL_ARCHETYPES.find(archetype => {
+        const archetypeLower = archetype.toLowerCase();
+        return archetypeLower.includes(normalized) || normalized.includes(archetypeLower);
+    });
+    return byIncludes || 'Оптимизатор';
 }
 
 // Wheel colors - gradient colors for each sector
@@ -76,50 +77,15 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    // Если нет текста от ИИ — запускаем запрос немедленно на странице результатов
-    (async function startAIRequestIfNeeded(){
-        try {
-            const stored = JSON.parse(localStorage.getItem('testResults') || '{}');
-            const hasText = (stored.personalizedMessage || stored.aiGeneratedStrategy || stored.message || '').trim().length > 0;
-            const pending = JSON.parse(localStorage.getItem('pendingAIRequest') || 'null');
-            if (!hasText && pending && pending.testData) {
-                console.log('results.js: starting AI request (page init) with payload', pending);
-                const resp = await fetch('/api/generate-results', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(pending)
-                });
-                if (resp.ok) {
-                    const data = await resp.json();
-                    const text = (data.message || data.aiGeneratedStrategy || '').trim();
-                    console.log('results.js: AI response received on results page');
-                    const merged = Object.assign({}, stored, {
-                        personalizedMessage: text,
-                        aiGeneratedStrategy: text
-                    });
-                    localStorage.setItem('testResults', JSON.stringify(merged));
-                    localStorage.removeItem('pendingAIRequest');
-                    // если колесо уже остановилось и текстовый блок есть — показать сразу
-                    const messageElement = document.getElementById('personalized-message');
-                    if (messageElement && text) {
-                        const paragraphs = text.split(/\n{2,}/);
-                        messageElement.innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
-                    }
-                } else {
-                    console.warn('results.js: AI request failed with status', resp.status);
-                }
-            }
-        } catch (e) {
-            console.error('results.js: startAIRequestIfNeeded error', e);
-        }
-    })();
-
     // Создаём колесо фортуны и запускаем вращение с последующей остановкой на архетипе
     createSpinningWheel();
 
-    // Получаем название архетипа и приводим к валидному элементу колеса
-    const archetypeNameRaw = results.archetype || results.profileName || ARCHETYPE_MAPPING[results.profileType] || 'Оптимизатор';
-    const archetypeName = resolveArchetypeName(archetypeNameRaw);
+    // Получаем название архетипа из ответа ИИ (парсится в contact.js)
+    const archetypeName = resolveArchetypeName(
+        results.archetype ||
+        results.profileName ||
+        ARCHETYPE_MAPPING[results.profileType]
+    );
     let fullText = (results.personalizedMessage || results.aiGeneratedStrategy || results.message || '').trim();
 
     // Стартуем быстрое вращение и размытие подписей, затем плавно останавливаемся на выбранном архетипе
@@ -130,26 +96,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const profileElement = document.getElementById('profile-type');
             if (profileElement) profileElement.textContent = archetypeName;
 
-            // Если текста нет, пробуем дожать генерацию здесь (ретрай)
-            if (!fullText) {
+            if (!isMeaningfulResponse(fullText)) {
                 try {
-                    const pending = JSON.parse(localStorage.getItem('pendingAIRequest') || 'null');
-                    if (pending && pending.testData) {
-                        const resp = await fetch('/api/generate-results', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(pending)
-                        });
-                        if (resp.ok) {
-                            const data = await resp.json();
-                            fullText = (data.message || data.aiGeneratedStrategy || '').trim();
-                            // Обновляем сохранённые результаты
-                            const saved = JSON.parse(localStorage.getItem('testResults') || '{}');
-                            saved.personalizedMessage = fullText;
-                            saved.aiGeneratedStrategy = fullText;
-                            localStorage.setItem('testResults', JSON.stringify(saved));
-                            // Убираем метку ретрая
-                            localStorage.removeItem('pendingAIRequest');
+                    const retryResult = await triggerAiRetry();
+                    if (retryResult && retryResult.text) {
+                        fullText = retryResult.text;
+                        if (retryResult.archetype) {
+                            const normalizedRetry = resolveArchetypeName(retryResult.archetype);
+                            const profileEl = document.getElementById('profile-type');
+                            if (profileEl) profileEl.textContent = normalizedRetry;
                         }
                     }
                 } catch (e) {
@@ -157,7 +112,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            setTimeout(() => revealDescription(fullText), 1000);
+            if (isMeaningfulResponse(fullText)) {
+                setTimeout(() => revealDescription(fullText), 1000);
+            } else {
+                setTimeout(() => showAiFallback(archetypeName), 800);
+            }
         });
     }, 1000);
 
@@ -201,8 +160,7 @@ function createSpinningWheel() {
     const radius = size / 2 - 10;
     const numSectors = ALL_ARCHETYPES.length;
     const anglePerSector = 360 / numSectors;
-    const angleRad = (Math.PI * 2) / numSectors;
-    const fontSize = Math.max(10, Math.round(size * 0.045));
+    const fontSize = Math.max(12, Math.round(size * 0.05));
 
     // Build clipPaths for each sector
     let clipDefs = '';
@@ -255,17 +213,16 @@ function createSpinningWheel() {
         const largeArc = anglePerSector > 180 ? 1 : 0;
         const pathData = `M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
 
-        svgHTML += `<g class="sector" data-index="${i}">`;
+        svgHTML += `<g class="sector" data-index="${i}" clip-path="url(#wheelClip-${i})">`;
         svgHTML += `<path d="${pathData}" fill="${WHEEL_COLORS[i]}" stroke="#ffffff" stroke-width="2" data-index="${i}"/>`;
 
         const angleMid = (startAngle + endAngle) / 2;
-        const textRadius = radius * 0.62;
-        const tx = centerX + textRadius * Math.cos((angleMid * Math.PI) / 180);
-        const ty = centerY + textRadius * Math.sin((angleMid * Math.PI) / 180);
-        const textLen = Math.max(40, Math.round(textRadius * angleRad * 0.85));
-        const textRotation = angleMid + 90;
+        const labelRadius = radius * 0.7;
+        const labelY = centerY - labelRadius;
 
-        svgHTML += `<text class="label-text" data-index="${i}" x="${tx}" y="${ty}" fill="#fff" font-size="${fontSize}" font-weight="700" text-anchor="middle" dominant-baseline="middle" transform="rotate(${textRotation}, ${tx}, ${ty})" clip-path="url(#wheelClip-${i})" lengthAdjust="spacingAndGlyphs" textLength="${textLen}">${ALL_ARCHETYPES[i]}</text>`;
+        svgHTML += `<g class="sector-label" transform="rotate(${angleMid}, ${centerX}, ${centerY})">`;
+        svgHTML += `<text class="wheel-label" data-index="${i}" x="${centerX}" y="${labelY}" transform="rotate(90, ${centerX}, ${labelY})">${ALL_ARCHETYPES[i]}</text>`;
+        svgHTML += `</g>`;
         svgHTML += `</g>`;
     }
 
@@ -315,10 +272,11 @@ function stopOnArchetype(archetypeName, onStop) {
     isSpinning = false;
 
     // Find the index of the target archetype
-    const targetIndex = ALL_ARCHETYPES.indexOf(archetypeName);
+    const normalized = resolveArchetypeName(archetypeName);
+    const targetIndex = ALL_ARCHETYPES.indexOf(normalized);
     if (targetIndex === -1) {
-        console.warn('Archetype not found, using fallback:', archetypeName);
-        return stopOnArchetype('Оптимизатор', onStop);
+        console.error('Archetype not found:', archetypeName);
+        return;
     }
 
     // Calculate target angle
@@ -350,8 +308,8 @@ function stopOnArchetype(archetypeName, onStop) {
 
     // Optional: highlight the winning sector after animation completes
     setTimeout(() => {
-        console.log('Wheel stopped on:', archetypeName);
-        highlightWinningSector(archetypeName);
+        console.log('Wheel stopped on:', normalized);
+        highlightWinningSector(normalized);
         const wc = document.querySelector('.wheel-container');
         if (wc) wc.classList.remove('spinning');
         if (typeof onStop === 'function') onStop();
@@ -359,10 +317,12 @@ function stopOnArchetype(archetypeName, onStop) {
 }
 
 function highlightWinningSector(archetypeName) {
+    document.querySelectorAll('.winning-sector').forEach(node => node.classList.remove('winning-sector'));
+    document.querySelectorAll('.winning-label').forEach(node => node.classList.remove('winning-label'));
     const idx = ALL_ARCHETYPES.indexOf(archetypeName);
     if (idx === -1) return;
     const path = document.querySelector(`.sector path[data-index="${idx}"]`);
-    const text = document.querySelector(`text.label-text[data-index="${idx}"]`);
+    const text = document.querySelector(`text.wheel-label[data-index="${idx}"]`);
     if (path) path.classList.add('winning-sector');
     if (text) text.classList.add('winning-label');
 }
@@ -374,6 +334,167 @@ function revealDescription(fullText) {
     if (!text) return;
     const paragraphs = text.split(/\n{2,}/);
     messageElement.innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
+}
+
+function isMeaningfulResponse(text) {
+    if (!text) return false;
+    const trimmed = text.trim();
+    const denseLength = trimmed.replace(/\s+/g, '').length;
+    return denseLength >= 2300 && /^АРХЕТИП:/i.test(trimmed);
+}
+
+function safeParse(value) {
+    if (!value) return null;
+    try {
+        return JSON.parse(value);
+    } catch (error) {
+        console.warn('results.js: failed to parse value from storage', error);
+        return null;
+    }
+}
+
+function buildRetryPayload() {
+    const pending = safeParse(localStorage.getItem('pendingAIRequest'));
+    if (pending && pending.testData) {
+        return pending;
+    }
+
+    const storedResults = safeParse(localStorage.getItem('testResults')) || {};
+    const storedAnswers = safeParse(localStorage.getItem('testData'));
+    if (storedAnswers && storedResults.profileType) {
+        return {
+            testData: storedAnswers,
+            profileType: storedResults.profileType,
+            readinessScore: storedResults.readinessScore
+        };
+    }
+    return null;
+}
+
+async function fetchAiResult(payload) {
+    const response = await fetch('/api/generate-results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    const bodyText = await response.text();
+    let data = null;
+    try {
+        data = bodyText ? JSON.parse(bodyText) : null;
+    } catch (error) {
+        console.warn('results.js: unable to parse AI response JSON', error);
+    }
+
+    if (!response.ok) {
+        const errorMessage = data?.error || bodyText || 'Не удалось получить ответ от модели';
+        throw new Error(errorMessage);
+    }
+
+    if (!data) {
+        throw new Error('Пустой ответ от AI');
+    }
+
+    const text = (data.message || data.aiGeneratedStrategy || '').trim();
+    return { text, data };
+}
+
+function persistAiResult(message, archetypeName, payload) {
+    if (!message) return;
+    const stored = safeParse(localStorage.getItem('testResults')) || {};
+    stored.personalizedMessage = message;
+    stored.aiGeneratedStrategy = message;
+    stored.message = message;
+    if (archetypeName) {
+        stored.archetype = resolveArchetypeName(archetypeName);
+    }
+    if (payload) {
+        if (payload.profileType && !stored.profileType) {
+            stored.profileType = payload.profileType;
+        }
+        if (typeof payload.readinessScore === 'number' && typeof stored.readinessScore !== 'number') {
+            stored.readinessScore = payload.readinessScore;
+        }
+    }
+    localStorage.setItem('testResults', JSON.stringify(stored));
+    localStorage.removeItem('pendingAIRequest');
+}
+
+async function triggerAiRetry() {
+    const payload = buildRetryPayload();
+    if (!payload) {
+        throw new Error('Не нашли сохранённых ответов для повторного запроса. Пройдите тест заново.');
+    }
+
+    const { text, data } = await fetchAiResult(payload);
+    const archetype = resolveArchetypeName(
+        data?.archetype ||
+        data?.profileName ||
+        ARCHETYPE_MAPPING[data?.profile] ||
+        ARCHETYPE_MAPPING[payload.profileType]
+    );
+
+    persistAiResult(text, archetype, payload);
+    return { text, archetype };
+}
+
+function showAiFallback(archetypeName) {
+    const container = document.getElementById('personalized-message');
+    if (!container) return;
+    const normalized = resolveArchetypeName(archetypeName);
+    container.innerHTML = `
+        <div class="ai-fallback">
+            <h4>Запрос к модели требует повторения</h4>
+            <p>Мы сохранили ваши ответы, но модель вернула слишком короткий текст. Попробуйте отправить повторный запрос.</p>
+            <button type="button" class="fallback-retry" data-archetype="${normalized}">Повторить запрос</button>
+            <p class="fallback-hint">Если повтор не помог, обновите страницу — мы автоматически подставим ответы без повторного теста.</p>
+            <p class="fallback-error" aria-live="polite"></p>
+        </div>
+    `;
+
+    const retryButton = container.querySelector('.fallback-retry');
+    if (retryButton) {
+        retryButton.addEventListener('click', () => handleFallbackRetry(retryButton));
+    }
+}
+
+async function handleFallbackRetry(button) {
+    if (!button) return;
+    const originalText = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Отправляем запрос...';
+    const wrapper = button.closest('.ai-fallback');
+    const errorNode = wrapper ? wrapper.querySelector('.fallback-error') : null;
+    if (errorNode) {
+        errorNode.textContent = '';
+    }
+
+    try {
+        const result = await triggerAiRetry();
+        if (!result || !isMeaningfulResponse(result.text)) {
+            throw new Error('Модель снова вернула короткий ответ. Попробуйте еще раз через минуту.');
+        }
+
+        const container = document.getElementById('personalized-message');
+        if (container) {
+            container.innerHTML = '';
+        }
+        revealDescription(result.text);
+        const profileElement = document.getElementById('profile-type');
+        if (profileElement && result.archetype) {
+            profileElement.textContent = resolveArchetypeName(result.archetype);
+        }
+        highlightWinningSector(resolveArchetypeName(result.archetype));
+    } catch (error) {
+        if (errorNode) {
+            errorNode.textContent = error.message || 'Неизвестная ошибка. Попробуйте позже.';
+        }
+        button.disabled = false;
+        button.textContent = originalText;
+        return;
+    }
+
+    button.disabled = false;
 }
 
 function displayResults(results, userData) {
