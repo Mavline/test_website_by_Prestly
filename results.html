@@ -28,42 +28,66 @@
             <div class="container">
                 <div class="results-grid">
                     <!-- Profile Section -->
-                    <div class="speedometer-section">
-                        <!-- СПИДОМЕТР И БАЛЛЫ ВРЕМЕННО ЗАКОММЕНТИРОВАНЫ (могут вернуться позже) -->
-                        <!--
-                        <h2>Уровень готовности к AI</h2>
-                        <div class="speedometer-container">
-                            <div class="speedometer">
-                                <div class="speedometer-arc"></div>
-                                <div class="speedometer-needle" id="needle"></div>
-                                <div class="speedometer-center"></div>
-                                <div class="speedometer-labels">
-                                    <span class="label-start">0</span>
-                                    <span class="label-middle">50</span>
-                                    <span class="label-end">100</span>
-                                </div>
-                            </div>
-                            <div class="score-display">
+                    <div class="analysis-section">
+                        <div class="analysis-header">
+                            <span class="analysis-status-chip" id="analysisStatusLabel">Передаём ответы модели…</span>
+                            <h3 class="analysis-title" id="profile-type">Определяем ваш архетип</h3>
+                            <p class="analysis-subtitle" id="analysisSubtitle">Мы используем все 13 ответов из теста, чтобы подобрать самый точный архетип.</p>
+                        </div>
+
+                        <div class="score-summary">
+                            <div class="score-chip">Уровень готовности</div>
+                            <div class="score-value">
                                 <span class="score-number" id="scoreNumber">0</span>
                                 <span class="score-text">из 100</span>
                             </div>
-                        </div>
-                        -->
-
-                        <!-- Spinning Wheel будет здесь -->
-                        <div id="spinningWheel" style="text-align: center; margin: 40px 0;">
-                            <!-- Wheel animation will be inserted here by JavaScript -->
+                            <p class="score-comment" id="scoreInterpretation">Собираем данные…</p>
                         </div>
 
-                        <div class="profile-display">
-                            <h3 id="profile-type">Ваш архетип</h3>
-                            <p class="profile-subtitle">Определяем ваш уникальный подход к AI...</p>
+                        <div class="analysis-progress" id="analysisProgress">
+                            <div class="analysis-step stage-active" data-stage="collect">
+                                <div class="step-index">1</div>
+                                <div class="step-body">
+                                    <h4>Фиксируем ваши ответы</h4>
+                                    <p>Сохраняем все выбранные варианты и свободные комментарии без сокращений.</p>
+                                </div>
+                            </div>
+                            <div class="analysis-step" data-stage="analyze">
+                                <div class="step-index">2</div>
+                                <div class="step-body">
+                                    <h4>Отправляем в модель</h4>
+                                    <p>Передаём контекст и локальный профиль, указываем требование на развернутый ответ.</p>
+                                </div>
+                            </div>
+                            <div class="analysis-step" data-stage="synthesize">
+                                <div class="step-index">3</div>
+                                <div class="step-body">
+                                    <h4>Собираем стратегию</h4>
+                                    <p>Проверяем, что модель разобрала каждый ответ и выдала минимум 5 детальных блоков.</p>
+                                </div>
+                            </div>
+                            <div class="analysis-step" data-stage="ready">
+                                <div class="step-index">4</div>
+                                <div class="step-body">
+                                    <h4>Показываем результат</h4>
+                                    <p>Фиксируем архетип, сохраняем ответ и делимся следующими шагами.</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="score-interpretation" id="scoreInterpretation">
-                            <!-- Will be filled by JavaScript -->
-                        </div>
-                        <div class="personalized-message" id="personalized-message">
-                            <!-- Will be filled by JavaScript -->
+
+                        <div class="analysis-output">
+                            <div class="analysis-placeholder" id="analysisPlaceholder">
+                                <span class="placeholder-line line-1"></span>
+                                <span class="placeholder-line line-2"></span>
+                                <span class="placeholder-line line-3"></span>
+                                <span class="placeholder-line line-4"></span>
+                                <span class="placeholder-line line-5"></span>
+                            </div>
+                            <div class="analysis-text" id="personalized-message"></div>
+                            <div class="analysis-error hidden" id="analysisError">
+                                <p class="error-message"></p>
+                                <button type="button" class="analysis-retry" id="analysisRetry">Попробовать снова</button>
+                            </div>
                         </div>
                     </div>
 
